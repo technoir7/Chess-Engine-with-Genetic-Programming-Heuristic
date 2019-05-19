@@ -3,6 +3,7 @@
 
 # Everything in this file is Thomas Dybdahl Ahle's (thomasahle) code from his  github. I deleted the search logic part as that is the only part
 # of this search logic was the only part Im interested in programming myself. 
+# This file has been mildly modified by me, Aaron, mostly to work better with my code
 
 from __future__ import print_function
 import re, sys, time
@@ -136,7 +137,9 @@ class Position(namedtuple('Position', 'board score wc bc ep kp')):
     kp - the king passant square
     """
 
+    # function written by me (Aaron) in order to access the board's evaluation
     def evaluation(self):
+        # print("evaluating")
         return self.score
 
     def pieces_dict(self):

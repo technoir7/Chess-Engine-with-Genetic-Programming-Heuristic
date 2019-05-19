@@ -63,8 +63,25 @@ class piecenode:
   def display(self,indent=0):
     # print '%s%d' % (' '*indent,self.v)
     # print (' '*indent)+self.name
-    print (' '*indent)+str(self.v) + " " + self.name
+    print (' '*indent) + self.name + " " + str(self.v)
 
+class eval_node:
+  def __init__(self,state):
+    # self.function=fw.function
+    self.state = state
+    self.name="evaluation node"
+    self.score = 0
+    # self.children=children
+
+  def evaluate(self,inp):    
+    # results=[n.evaluate(inp) for n in self.children]
+    # print("evaluating")
+    self.score = inp.evaluation()
+    return self.score
+  def display(self,indent=0):
+    print (' '*indent)+self.name + " " + str(self.score)
+    # for c in self.children:
+    #   c.display(indent+1)
 
 # boardScore = fwrapper(lambda )
 
@@ -152,15 +169,16 @@ def makerandomtree(pc, state, maxdepth=4,fpr=0.5,ppr=0.6):
   elif random.random()<ppr:
     # lst = pieces(state)
     # piece = choice(lst)
-    # new_list = state.pieces_dict()
+    new_list = state.pieces_dict()
     # return paramnode(randint(0,pc-1))
     # return node(piece, None)
     # return node(piece, state)
     # return piecenode(state.pieces_dict()['p'], "your pawns")
-    return piecenode('p', "your pawns")
+    piece = random.choice(list(new_list))
+    return choice([piecenode(piece, piece), eval_node(state)])
     # return piecenode(piece(), piece.__name__)
   else:
-    return constnode(random.uniform(0, 1))
+    return choice([constnode(random.uniform(0, 1))])
 
     # return constnode(randint(0,10))
 

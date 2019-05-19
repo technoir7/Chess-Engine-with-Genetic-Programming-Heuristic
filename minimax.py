@@ -173,8 +173,9 @@ class Minimax:
         # return state.evaluation()
         # print(state)
         # return random.randint(0, 1000)
+        # print(state.evaluation())
         # return state.evaluation()
-        self.heuristic.display()
+        # self.heuristic.display()
         # print(self.heuristic.evaluate(state))
         return self.heuristic.evaluate(state)
 
