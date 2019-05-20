@@ -4,7 +4,6 @@ from math import log
 from chess_logic_by_thomasahle import *
 from minimax import *
 
-# values = {}
 state = None
 
 class fwrapper:

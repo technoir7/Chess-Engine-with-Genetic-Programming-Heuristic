@@ -1,9 +1,7 @@
 from __future__ import print_function
 import re, sys, time
 import random
-# from chess import *
 from chess_logic_by_thomasahle import *
-# from chess_logic_by_thomasahle import HEURISTIC
 from genetic_programming import*
 from itertools import count
 from collections import OrderedDict, namedtuple
