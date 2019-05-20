@@ -9,12 +9,11 @@ from __future__ import print_function
 import re, sys, time
 from minimax import *
 from genetic_programming import *
-from heuristic import *
 from itertools import count
 from collections import OrderedDict, namedtuple
 
 ###############################################################################
-# Piece-Square tables. Tune these to change sunfish's behaviour
+# Piece-Square tables. 
 ###############################################################################
 
 piece = { 'P': 100, 'N': 280, 'B': 320, 'R': 479, 'Q': 929, 'K': 60000 }
@@ -136,6 +135,8 @@ class Position(namedtuple('Position', 'board score wc bc ep kp')):
     ep - the en passant square
     kp - the king passant square
     """
+    # def __init__(board, score, wc, bc, ep, kp):
+    #     pass
 
     # function written by me (Aaron) in order to access the board's evaluation
     def evaluation(self):

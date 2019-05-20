@@ -5,6 +5,10 @@ from chess_logic_by_thomasahle import *
 from minimax import *
 
 state = None
+# MATE_LOWER = piece['K'] - 10*piece['Q']
+# MATE_UPPER = piece['K'] + 10*piece['Q']
+MATE_LOWER = 50710
+MATE_UPPER = 69290
 
 class fwrapper:
   def __init__(self,function,childcount,name):
@@ -49,7 +53,7 @@ class constnode:
 class piecenode:
   def __init__(self, piece, name):
     self.piece = piece
-    self.v=0
+    self.value=0
     # self.state = state
     # self.inp = None
     self.name = name
@@ -57,12 +61,12 @@ class piecenode:
     # inp.pieces_dict()
     # return self.v
     # self.inp = inp
-    self.v = inp.pieces_dict()[self.piece]
+    self.value = inp.pieces_dict()[self.piece]
     return inp.pieces_dict()[self.piece]
   def display(self,indent=0):
     # print '%s%d' % (' '*indent,self.v)
     # print (' '*indent)+self.name
-    print (' '*indent) + self.name + " " + str(self.v)
+    print (' '*indent) + self.name + " " + str(self.value)
 
 class eval_node:
   def __init__(self,state):
@@ -101,6 +105,66 @@ mulw=fwrapper(lambda l:l[0]*l[1],2,'multiply')
 # your_bishops = fwrapper(lambda : state.pieces_dict()['b'], 0, 'your bishops')
 # your_queen = fwrapper(lambda : state.pieces_dict()['q'], 0, 'your queen')
 # your_king = fwrapper(lambda : state.pieces_dict()['k'], 0, 'your king')
+
+def match(state, players):
+  pos = state
+  print("game")
+
+  # heuristic = makerandomtree(5, pos)
+  # heuristic.display()
+  # searcher = Minimax(heuristic)
+  player1 = Minimax(players[0])
+  player2 = Minimax(players[1])
+  # players[0].display()
+  # players[1].display()
+  moves = 0
+  while moves < 25:
+    # print(pos.pieces_dict())
+    # print_pos(pos)
+
+    if pos.score <= -MATE_LOWER:
+      return 1
+      # print("You lost")
+      break
+
+    move, score = player1.search(pos, secs=2)
+
+    # # We query the user until she enters a (pseudo) legal move.
+    # move = None
+    # while move not in pos.gen_moves():
+    #     match = re.match('([a-h][1-8])'*2, input('Your move: '))
+    #     if match:
+    #         move = parse(match.group(1)), parse(match.group(2))
+    #     else:
+    #         # Inform the user when invalid input (e.g. "help") is entered
+    #         print("Please enter a move like g8f6")
+    pos = pos.move(move)
+
+    # # After our move we rotate the board and print it again.
+    # # This allows us to see the effect of our move.
+    # print_pos(pos.rotate())
+
+    # print(MATE_LOWER)
+    # print(pos.score)
+
+    if pos.score <= -MATE_LOWER:
+      # print("You won")
+      return 0
+      break
+
+    # Fire up the engine to look for a move.
+    move, score = player2.search(pos, secs=2)
+    # move, score = searcher.search(pos, heuristic)
+
+    if score == MATE_UPPER:
+      print("Checkmate!")
+
+    # # The black player moves from a rotated position, so we have to
+    # # 'back rotate' the move before printing it.
+    # print("My move:", render(119-move[0]) + render(119-move[1]))
+    pos = pos.move(move)
+  return -1
+
 def pieces(state):
 
   my_pawns = lambda : state.pieces_dict()['P']
@@ -234,7 +298,7 @@ def getrankfunction(dataset):
   
     
 
-def evolve(state,popsize,rankfunction,maxgen=500,
+def evolve(state, pc,popsize,rankfunction,maxgen=500,
            mutationrate=0.1,breedingrate=0.4,pexp=0.7,pnew=0.05):
   # Returns a random number, tending towards lower numbers. The lower pexp
   # is, more lower numbers you will get
@@ -242,9 +306,10 @@ def evolve(state,popsize,rankfunction,maxgen=500,
     return int(log(random())/log(pexp))
 
   # Create a random initial population
+  # print state
   population=[makerandomtree(pc, state) for i in range(popsize)]
   for i in range(maxgen):
-    scores=rankfunction(population)
+    scores=rankfunction(state, population)
     print scores[0][0]
     if scores[0][0]==0: break
     
@@ -311,7 +376,7 @@ def evolve(state,popsize,rankfunction,maxgen=500,
 #   return -1
 
 
-def tournament(pl):
+def tournament(state, pl):
   # Count losses
   losses=[0 for p in pl]
   
@@ -321,7 +386,7 @@ def tournament(pl):
       if i==j: continue
       
       # Who is the winner?
-      winner=gridgame([pl[i],pl[j]])
+      winner=match(state, [pl[i],pl[j]])
       
       # Two points for a loss, one point for a tie
       if winner==0:
@@ -330,13 +395,14 @@ def tournament(pl):
         losses[i]+=2
       elif winner==-1:
         losses[i]+=1
-        losses[i]+=1
+        losses[j]+=1
         pass
 
   # Sort and return the results
   z=zip(losses,pl)
   z.sort()
   return z      
+
 
 # class humanplayer:
 #   def evaluate(self,board):
@@ -366,6 +432,7 @@ def tournament(pl):
 #     # Return whatever the user enters
 #     move=int(raw_input())
 #     return move
+
 
 
 class fwrapper:
