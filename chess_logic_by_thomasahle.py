@@ -290,7 +290,7 @@ def main():
     heuristic.display()
     searcher = Minimax(heuristic)
     while True:
-        print(pos.pieces_dict())
+        # print(pos.pieces_dict())
         print_pos(pos)
 
         if pos.score <= -MATE_LOWER:
@@ -312,8 +312,8 @@ def main():
         # This allows us to see the effect of our move.
         print_pos(pos.rotate())
 
-        print(MATE_LOWER)
-        print(pos.score)
+        # print(MATE_LOWER)
+        # print(pos.score)
 
         if pos.score <= -MATE_LOWER:
             print("You won")

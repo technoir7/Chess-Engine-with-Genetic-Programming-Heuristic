@@ -1,7 +1,8 @@
 from random import random,randint,choice
 from copy import deepcopy
 from math import log
-from chess_logic_by_thomasahle import *
+import chess_logic_by_thomasahle
+# from chess_logic_by_thomasahle import *
 from minimax import *
 
 state = None
@@ -109,6 +110,7 @@ mulw=fwrapper(lambda l:l[0]*l[1],2,'multiply')
 def match(state, players):
   pos = state
   print("game")
+  score = 0
 
   # heuristic = makerandomtree(5, pos)
   # heuristic.display()
@@ -118,9 +120,10 @@ def match(state, players):
   # players[0].display()
   # players[1].display()
   moves = 0
-  while moves < 25:
+  while moves < 3:
     # print(pos.pieces_dict())
-    # print_pos(pos)
+    # print pos.score
+    # chess_logic_by_thomasahle.print_pos(pos)
 
     if pos.score <= -MATE_LOWER:
       return 1
@@ -143,6 +146,9 @@ def match(state, players):
     # # After our move we rotate the board and print it again.
     # # This allows us to see the effect of our move.
     # print_pos(pos.rotate())
+    # pos.rotate()
+    # chess_logic_by_thomasahle.print_pos(pos.rotate())
+    # print pos.score
 
     # print(MATE_LOWER)
     # print(pos.score)
@@ -163,6 +169,14 @@ def match(state, players):
     # # 'back rotate' the move before printing it.
     # print("My move:", render(119-move[0]) + render(119-move[1]))
     pos = pos.move(move)
+    moves += 1
+    # print moves
+  # print("final score")
+  # print score
+  if pos.score > 0:
+    return 1
+  elif pos.score < 0:
+    return 0
   return -1
 
 def pieces(state):
@@ -224,6 +238,8 @@ flist=[addw,mulw,ifw,gtw,subw]
 def makerandomtree(pc, state, maxdepth=4,fpr=0.5,ppr=0.6):
 
   # pieces = state.pieces_dict()
+  new_list = state.pieces_dict()
+  piece = random.choice(list(new_list))
   if random.random()<fpr and maxdepth>0:
     f=choice(flist)
     children=[makerandomtree(pc,state, maxdepth-1,fpr,ppr) 
@@ -232,16 +248,14 @@ def makerandomtree(pc, state, maxdepth=4,fpr=0.5,ppr=0.6):
   elif random.random()<ppr:
     # lst = pieces(state)
     # piece = choice(lst)
-    new_list = state.pieces_dict()
     # return paramnode(randint(0,pc-1))
     # return node(piece, None)
     # return node(piece, state)
     # return piecenode(state.pieces_dict()['p'], "your pawns")
-    piece = random.choice(list(new_list))
     return choice([piecenode(piece, piece), eval_node(state)])
     # return piecenode(piece(), piece.__name__)
   else:
-    return choice([constnode(random.uniform(0, 1))])
+    return choice([constnode(random.uniform(0, 1)),piecenode(piece, piece)])
 
     # return constnode(randint(0,10))
 
