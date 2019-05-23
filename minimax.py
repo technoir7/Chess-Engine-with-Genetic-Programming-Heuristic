@@ -12,37 +12,12 @@ from collections import OrderedDict, namedtuple
 # Search logic
 ###############################################################################
 
-# lower <= s(pos) <= upper
-# Entry = namedtuple('Entry', 'lower upper')
-
-# The normal OrderedDict doesn't update the position of a key in the list,
-# when the value is changed.
-# class LRUCache:
-#     '''Store items in the order the keys were last added'''
-#     def __init__(self, size):
-#         self.od = OrderedDict()
-#         self.size = size
-
-#     def get(self, key, default=None):
-#         try: self.od.move_to_end(key)
-#         except KeyError: return default
-#         return self.od[key]
-
-#     def __setitem__(self, key, value):
-#         try: del self.od[key]
-#         except KeyError:
-#             if len(self.od) == self.size:
-#                 self.od.popitem(last=False)
-#         self.od[key] = value
 
 #######################################################################################
 # Minimax with Alpha Beta Pruning - adapted from UC Berkeley CS188 multiagent project
 #######################################################################################
 class Minimax:
     def __init__(self, heuristic):
-        # self.tp_score = LRUCache(TABLE_SIZE)
-        # self.tp_move = LRUCache(TABLE_SIZE)
-        # self.nodes = 0
         self.heuristic = heuristic
 
     # def bound(self, pos, gamma, depth, root=True):

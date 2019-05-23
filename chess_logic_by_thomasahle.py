@@ -285,9 +285,13 @@ def print_pos(pos):
 
 def main():
     # MATE_LOWER = 242    
+    # state = Position(initial, 0, (True,True), (True,True), 0, 0)
+    # print state
     pos = Position(initial, 0, (True,True), (True,True), 0, 0)
-    heuristic = makerandomtree(5, pos)
+    heuristic = evolve(pos, 5, 2, tournament, maxgen=50)
     heuristic.display()
+    # heuristic = makerandomtree(5, pos)
+    # heuristic.display()
     searcher = Minimax(heuristic)
     while True:
         # print(pos.pieces_dict())

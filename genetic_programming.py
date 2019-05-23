@@ -2,7 +2,6 @@ from random import random,randint,choice
 from copy import deepcopy
 from math import log
 import chess_logic_by_thomasahle
-# from chess_logic_by_thomasahle import *
 from minimax import *
 
 state = None
@@ -55,13 +54,9 @@ class piecenode:
   def __init__(self, piece, name):
     self.piece = piece
     self.value=0
-    # self.state = state
-    # self.inp = None
     self.name = name
   def evaluate(self,inp):
     # inp.pieces_dict()
-    # return self.v
-    # self.inp = inp
     self.value = inp.pieces_dict()[self.piece]
     return inp.pieces_dict()[self.piece]
   def display(self,indent=0):
@@ -93,19 +88,7 @@ addw=fwrapper(lambda l:l[0]+l[1],2,'add')
 subw=fwrapper(lambda l:l[0]-l[1],2,'subtract') 
 mulw=fwrapper(lambda l:l[0]*l[1],2,'multiply')
 
-# my_pawns = fwrapper(lambda : state.pieces_dict()['P'], 0, 'my pawns')
-# my_rooks = fwrapper(lambda : state.pieces_dict()['R'], 0, 'my rooks')
-# my_knights = fwrapper(lambda : state.pieces_dict()['N'], 0, 'my knights')
-# my_bishops = fwrapper(lambda : state.pieces_dict()['B'], 0, 'my bishops')
-# my_queen = fwrapper(lambda : state.pieces_dict()['Q'], 0, 'my queen')
-# my_king = fwrapper(lambda : state.pieces_dict()['K'], 0, 'my king')
 
-# your_pawns = fwrapper(lambda : state.pieces_dict()['p'], 0, 'your pawns')
-# your_rooks = fwrapper(lambda : state.pieces_dict()['r'], 0, 'your rooks')
-# your_knights = fwrapper(lambda : state.pieces_dict()['n'], 0, 'your knights')
-# your_bishops = fwrapper(lambda : state.pieces_dict()['b'], 0, 'your bishops')
-# your_queen = fwrapper(lambda : state.pieces_dict()['q'], 0, 'your queen')
-# your_king = fwrapper(lambda : state.pieces_dict()['k'], 0, 'your king')
 
 def match(state, players):
   pos = state
@@ -120,7 +103,7 @@ def match(state, players):
   # players[0].display()
   # players[1].display()
   moves = 0
-  while moves < 3:
+  while moves < 7:
     # print(pos.pieces_dict())
     # print pos.score
     # chess_logic_by_thomasahle.print_pos(pos)
@@ -179,41 +162,6 @@ def match(state, players):
     return 0
   return -1
 
-def pieces(state):
-
-  my_pawns = lambda : state.pieces_dict()['P']
-  my_rooks = lambda : state.pieces_dict()['R']
-  my_knights = lambda : state.pieces_dict()['N']
-  my_bishops = lambda : state.pieces_dict()['B']
-  my_queen = lambda : state.pieces_dict()['Q']
-  my_king = lambda : state.pieces_dict()['K']
-
-  your_pawns = lambda : state.pieces_dict()['p']
-  your_rooks = lambda : state.pieces_dict()['r']
-  your_knights = lambda : state.pieces_dict()['n']
-  your_bishops = lambda : state.pieces_dict()['b']
-  your_queen = lambda : state.pieces_dict()['q']
-  your_king = lambda : state.pieces_dict()['k']
-
-  my_pawns.__name__ = 'my_pawns'
-  my_rooks.__name__ = 'my_rooks'
-  my_knights.__name__ = 'my_knights'
-  my_bishops.__name__ = 'my_bishops'
-  my_queen.__name__ = 'my_queen'
-  my_king.__name__ = 'my_king'
-
-  your_pawns.__name__ = 'your_pawns'
-  your_rooks.__name__ = 'your_rooks'
-  your_knights.__name__ = 'your_knights'
-  your_bishops.__name__ = 'your_bishops'
-  your_queen.__name__ = 'your_queen'
-  your_king.__name__ = 'your_king'
-
-  piece_list = ([my_pawns, my_rooks, my_knights, my_bishops, my_queen, my_king, your_pawns, 
-                your_rooks, your_knights, your_bishops, your_queen, your_king])
-
-  return piece_list
-
 def iffunc(l):
   if l[0]>0: return l[1]
   else: return l[2]
@@ -226,18 +174,11 @@ gtw=fwrapper(isgreater,2,'isgreater')
 
 flist=[addw,mulw,ifw,gtw,subw]
 
-# def exampletree():
-#   return node(ifw,[
-#                   node(gtw,[paramnode(0),constnode(3)]),
-#                   node(addw,[paramnode(1),constnode(5)]),
-#                   node(subw,[paramnode(1),constnode(2)]),
-#                   ]
-#               )
-
 # def makerandomtree(pc, state, maxdepth=4,fpr=0.5,ppr=0.6):
 def makerandomtree(pc, state, maxdepth=4,fpr=0.5,ppr=0.6):
+  if state is None:
+    state = chess_logic_by_thomasahle.Position(chess_logic_by_thomasahle.initial, 0, (True,True), (True,True), 0, 0)
 
-  # pieces = state.pieces_dict()
   new_list = state.pieces_dict()
   piece = random.choice(list(new_list))
   if random.random()<fpr and maxdepth>0:
@@ -255,26 +196,10 @@ def makerandomtree(pc, state, maxdepth=4,fpr=0.5,ppr=0.6):
     return choice([piecenode(piece, piece), eval_node(state)])
     # return piecenode(piece(), piece.__name__)
   else:
-    return choice([constnode(random.uniform(0, 1)),piecenode(piece, piece)])
+    return choice([constnode(random.uniform(0, 1)),eval_node(state)])
 
     # return constnode(randint(0,10))
 
-def material_difference(state):
-  # for item in state.board:
-  #   if 
-  return 0
-              
-
-# def hiddenfunction(x,y):
-#     return x**2+2*y+3*x+5
-
-# def buildhiddenset():
-#   rows=[]
-#   for i in range(200):
-#     x=randint(0,40)
-#     y=randint(0,40)
-#     rows.append([x,y,hiddenfunction(x,y)])
-#   return rows
 
 def scorefunction(tree,s):
   dif=0
@@ -285,7 +210,7 @@ def scorefunction(tree,s):
 
 
 def mutate(t,pc,probchange=0.1):
-  if random()<probchange:
+  if random.random()<probchange:
     return makerandomtree(pc, state)
   else:
     result=deepcopy(t)
@@ -294,7 +219,7 @@ def mutate(t,pc,probchange=0.1):
     return result
 
 def crossover(t1,t2,probswap=0.7,top=1):
-  if random()<probswap and not top:
+  if random.random()<probswap and not top:
     return deepcopy(t2) 
   else:
     result=deepcopy(t1)
@@ -313,33 +238,41 @@ def getrankfunction(dataset):
     
 
 def evolve(state, pc,popsize,rankfunction,maxgen=500,
-           mutationrate=0.1,breedingrate=0.4,pexp=0.7,pnew=0.05):
+           mutationrate=0.1,breedingrate=0.4,pexp=0.5,pnew=0.05):
   # Returns a random number, tending towards lower numbers. The lower pexp
   # is, more lower numbers you will get
   def selectindex():
-    return int(log(random())/log(pexp))
+    return int(log(random.random())/log(pexp))
+
 
   # Create a random initial population
-  # print state
   population=[makerandomtree(pc, state) for i in range(popsize)]
   for i in range(maxgen):
+    print("inside evolve for loop")
     scores=rankfunction(state, population)
     print scores[0][0]
+    scores_length = len(scores)
     if scores[0][0]==0: break
-    
+        
     # The two best always make it
     newpop=[scores[0][1],scores[1][1]]
     
     # Build the next generation
     while len(newpop)<popsize:
-      if random()>pnew:
+      random_num = random.random()
+      print random_num
+      print("inside while")
+      if random_num>pnew:
+        print("inside while and if statement")
+        print scores_length
         newpop.append(mutate(
-                      crossover(scores[selectindex()][1],
-                                 scores[selectindex()][1],
+                      crossover(scores[selectindex() % scores_length][1],
+                                 scores[selectindex() % scores_length][1],
                                 probswap=breedingrate),
                         pc,probchange=mutationrate))
       else:
       # Add a random node to mix things up
+        print("inside else")
         newpop.append(makerandomtree(pc, state))
         
     population=newpop
@@ -401,6 +334,7 @@ def tournament(state, pl):
       
       # Who is the winner?
       winner=match(state, [pl[i],pl[j]])
+      print("tournament inside nested loop")
       
       # Two points for a loss, one point for a tie
       if winner==0:
@@ -416,38 +350,6 @@ def tournament(state, pl):
   z=zip(losses,pl)
   z.sort()
   return z      
-
-
-# class humanplayer:
-#   def evaluate(self,board):
-
-#     # Get my location and the location of other players
-#     me=tuple(board[0:2])
-#     others=[tuple(board[x:x+2]) for x in range(2,len(board)-1,2)]
-    
-#     # Display the board
-#     for i in range(4):
-#       for j in range(4):
-#         if (i,j)==me:
-#           print 'O',
-#         elif (i,j) in others:
-#           print 'X',
-#         else:
-#           print '.',
-#       print
-      
-#     # Show moves, for reference
-#     print 'Your last move was %d' % board[len(board)-1]
-#     print ' 0'
-#     print '2 3'
-#     print ' 1'
-#     print 'Enter move: ',
-    
-#     # Return whatever the user enters
-#     move=int(raw_input())
-#     return move
-
-
 
 class fwrapper:
   def __init__(self,function,params,name):
