@@ -133,7 +133,6 @@ class Minimax:
     
     def heuristic_func(self, pc, state):
         # to be changed; should not make new tree each move
-        # maybe move to main() or Position class
         evaluation = makerandomtree(pc, state)
         return evaluation
         
@@ -151,13 +150,6 @@ class Minimax:
         # self.heuristic.display()
         # print(self.heuristic.evaluate(state))
         return self.heuristic.evaluate(state)
-
-    # def evaluate(self, state, index):
-        # Essentially a random number geneator 
-    #     evaluation_function = self.heuristic_func(2, state)
-    #     print(evaluation_function.evaluate(state))
-    #     return evaluation_function.evaluate(state)
-
 
     def solution(self, state):
         actions = []
@@ -216,8 +208,6 @@ class Minimax:
         for action in actions:
                 state = game_state.move(action)
                 score = min(score, self.value(index+1, state, depth, alpha, beta))
-                # print score
-                # print alpha
                 alpha = max(alpha, score)
                 if score < alpha:
                     return score
