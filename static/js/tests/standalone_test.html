@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Movement Standalone Test</title>
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: row;
+            margin-top: 20px;
+        }
+        
+        .board-container {
+            flex: 1;
+        }
+        
+        .log-container {
+            flex: 1;
+            margin-left: 20px;
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        #chessboard {
+            width: 500px;
+            height: 500px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border: 2px solid #333;
+        }
+        
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .light {
+            background-color: #f0d9b5;
+        }
+        
+        .dark {
+            background-color: #b58863;
+        }
+        
+        .piece {
+            width: 80%;
+            height: 80%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .piece img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        
+        .square.selected {
+            box-shadow: inset 0 0 0 4px rgba(0, 153, 255, 0.8);
+        }
+        
+        .light.selected {
+            background-color: #e0c9a5;
+        }
+        
+        .dark.selected {
+            background-color: #a57853;
+        }
+        
+        .square.highlight {
+            position: relative;
+        }
+        
+        .square.highlight:after {
+            content: '';
+            position: absolute;
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            background-color: rgba(0, 153, 255, 0.4);
+            z-index: 1;
+        }
+        
+        .square.highlight.capture:after {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+            border: 4px solid rgba(255, 0, 0, 0.5);
+            box-sizing: border-box;
+            background-color: transparent;
+        }
+        
+        .square.last-move {
+            box-shadow: inset 0 0 0 4px rgba(255, 215, 0, 0.6);
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chess Movement Standalone Test</h1>
+    <p>This is a standalone test page for the chess piece movement implementation. No server required.</p>
+    
+    <div class="controls">
+        <button id="reset-btn">Reset Board</button>
+        <button id="test-e2e4-btn">Test e2-e4 Move</button>
+        <button id="debug-btn">Debug Legal Moves</button>
+    </div>
+    
+    <div class="container">
+        <div class="board-container">
+            <div id="chessboard"></div>
+        </div>
+        
+        <div class="log-container">
+            <h3>Console Output</h3>
+            <div id="log"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Override console for the log element
+        const logElement = document.getElementById('log');
+        
+        const originalConsoleLog = console.log;
+        console.log = function() {
+            const args = Array.from(arguments);
+            const message = args.join(' ');
+            
+            // Still log to the browser console
+            originalConsoleLog.apply(console, args);
+            
+            // Add to our log element
+            const logLine = document.createElement('div');
+            logLine.textContent = message;
+            logElement.appendChild(logLine);
+            logElement.scrollTop = logElement.scrollHeight;
+        };
+    </script>
+    
+    <script>
+        /**
+         * Chessboard.js - Handles chessboard rendering and piece movement
+         */
+        class ChessBoard {
+            constructor() {
+                this.boardElement = document.getElementById('chessboard');
+                this.squares = {};
+                this.selectedSquare = null;
+                this.legalMoves = [];
+                this.lastMove = null;
+                this.boardState = {};
+                this.orientation = 'white'; // white pieces at bottom
+                this.pieceImages = {
+                    'p': 'https://upload.wikimedia.org/wikipedia/commons/c/c7/Chess_pdt45.svg',
+                    'r': 'https://upload.wikimedia.org/wikipedia/commons/f/ff/Chess_rdt45.svg',
+                    'n': 'https://upload.wikimedia.org/wikipedia/commons/e/ef/Chess_ndt45.svg',
+                    'b': 'https://upload.wikimedia.org/wikipedia/commons/9/98/Chess_bdt45.svg',
+                    'q': 'https://upload.wikimedia.org/wikipedia/commons/4/47/Chess_qdt45.svg',
+                    'k': 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Chess_kdt45.svg',
+                    'P': 'https://upload.wikimedia.org/wikipedia/commons/4/45/Chess_plt45.svg',
+                    'R': 'https://upload.wikimedia.org/wikipedia/commons/7/72/Chess_rlt45.svg',
+                    'N': 'https://upload.wikimedia.org/wikipedia/commons/7/70/Chess_nlt45.svg',
+                    'B': 'https://upload.wikimedia.org/wikipedia/commons/b/b1/Chess_blt45.svg',
+                    'Q': 'https://upload.wikimedia.org/wikipedia/commons/1/15/Chess_qlt45.svg',
+                    'K': 'https://upload.wikimedia.org/wikipedia/commons/4/42/Chess_klt45.svg'
+                };
+                this.init();
+            }
+
+            /**
+             * Initialize the chessboard
+             */
+            init() {
+                if (this.boardElement) {
+                    this.createBoard();
+                    this.setupEventListeners();
+                    this.addDefaultLegalMoves();
+                    console.log('Chessboard initialized with default legal moves');
+                } else {
+                    console.error('Board element not found');
+                }
+            }
+
+            /**
+             * Add default legal moves for initial position
+             * This ensures pawns can move even if the server doesn't provide legal moves
+             */
+            addDefaultLegalMoves() {
+                console.log('Adding default legal moves for initial position');
+                
+                // Add pawn moves
+                const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+                
+                files.forEach(file => {
+                    // White pawns can move one or two squares forward from rank 2
+                    this.legalMoves.push({ from: `${file}2`, to: `${file}3` });
+                    this.legalMoves.push({ from: `${file}2`, to: `${file}4` });
+                });
+                
+                // Add knight moves
+                this.legalMoves.push({ from: 'b1', to: 'a3' });
+                this.legalMoves.push({ from: 'b1', to: 'c3' });
+                this.legalMoves.push({ from: 'g1', to: 'f3' });
+                this.legalMoves.push({ from: 'g1', to: 'h3' });
+                
+                console.log(`Added ${this.legalMoves.length} default legal moves`);
+            }
+
+            /**
+             * Create the chessboard squares
+             */
+            createBoard() {
+                const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+                const ranks = [1, 2, 3, 4, 5, 6, 7, 8];
+                
+                // Clear the board first
+                this.boardElement.innerHTML = '';
+                
+                // Create squares
+                for (let rank = 8; rank >= 1; rank--) {
+                    for (let fileIndex = 0; fileIndex < 8; fileIndex++) {
+                        const file = files[fileIndex];
+                        const squareId = file + rank;
+                        const isLightSquare = (fileIndex + rank) % 2 !== 0;
+                        
+                        const square = document.createElement('div');
+                        square.id = squareId;
+                        square.className = `square ${isLightSquare ? 'light' : 'dark'}`;
+                        square.dataset.file = file;
+                        square.dataset.rank = rank;
+                        
+                        this.boardElement.appendChild(square);
+                        this.squares[squareId] = square;
+                    }
+                }
+            }
+
+            /**
+             * Set up event listeners for the chessboard
+             */
+            setupEventListeners() {
+                // Add click handlers for each square
+                Object.values(this.squares).forEach(square => {
+                    square.addEventListener('click', () => {
+                        this.handleSquareClick(square.id);
+                    });
+                });
+            }
+
+            /**
+             * Handle a square click event
+             * @param {string} squareId - ID of the clicked square
+             */
+            handleSquareClick(squareId) {
+                // Check if game is active and it's player's turn
+                this.handlePlayerSquareClick(squareId);
+            }
+            
+            /**
+             * Handle a valid player square click
+             * @param {string} squareId - ID of the clicked square
+             */
+            handlePlayerSquareClick(squareId) {
+                const hasPiece = this.boardState[squareId] !== undefined;
+                
+                // If a square is already selected
+                if (this.selectedSquare) {
+                    // If the clicked square is the same as the selected square, deselect it
+                    if (squareId === this.selectedSquare) {
+                        console.log(`Deselecting ${squareId}`);
+                        this.deselectSquare();
+                        return;
+                    }
+                    
+                    // Check if the move is legal
+                    if (this.isLegalMove(this.selectedSquare, squareId)) {
+                        console.log(`Making move from ${this.selectedSquare} to ${squareId}`);
+                        this.makeMove(this.selectedSquare, squareId);
+                    } else {
+                        console.log(`Move from ${this.selectedSquare} to ${squareId} is not legal`);
+                        
+                        // If the clicked square has a friendly piece, select it instead
+                        if (hasPiece && this.isPieceFriendly(squareId)) {
+                            console.log(`Selecting new piece at ${squareId}`);
+                            this.selectSquare(squareId);
+                        } else {
+                            // Deselect current piece since the move isn't valid
+                            console.log(`Deselecting ${this.selectedSquare} as the move isn't valid`);
+                            this.deselectSquare();
+                        }
+                    }
+                } else if (hasPiece && this.isPieceFriendly(squareId)) {
+                    // If no square is selected and clicked on a friendly piece, select it
+                    console.log(`Selecting piece at ${squareId}`);
+                    this.selectSquare(squareId);
+                }
+            }
+
+            /**
+             * Check if a move is legal
+             * @param {string} from - Starting square (e.g., 'e2')
+             * @param {string} to - Target square (e.g., 'e4')
+             * @returns {boolean} - Whether the move is legal
+             */
+            isLegalMove(from, to) {
+                console.log(`Checking if move from ${from} to ${to} is legal`);
+                
+                // First check if the move exists in the legal moves array
+                const moveExists = this.legalMoves.some(move => 
+                    move.from === from && move.to === to
+                );
+                
+                if (moveExists) {
+                    console.log(`Move from ${from} to ${to} found in legal moves array - VALID`);
+                    return true;
+                }
+                
+                // If we don't have legal moves or the move isn't in there, fall back to basic rules
+                console.log(`Move from ${from} to ${to} not found in legal moves array (${this.legalMoves.length} moves available), checking fallback rules`);
+                
+                // Get the piece at the "from" position
+                const piece = this.boardState[from];
+                if (!piece) {
+                    console.log(`No piece found at ${from}`);
+                    return false;
+                }
+                
+                // Check if there's a piece at the destination (can't capture our own pieces)
+                const destPiece = this.boardState[to];
+                if (destPiece && destPiece.color === piece.color) {
+                    console.log(`Cannot capture own piece at ${to}`);
+                    return false;
+                }
+                
+                // Implement basic chess rules for pawns
+                if (piece.type.toLowerCase() === 'p') {
+                    // White pawn
+                    if (piece.color === 'white') {
+                        // One square forward
+                        if (to === `${from[0]}${parseInt(from[1]) + 1}`) {
+                            if (!destPiece) { 
+                                console.log(`White pawn can move one square forward - VALID`);
+                                return true;
+                            }
+                        }
+                        
+                        // Two squares forward from starting position
+                        if (from[1] === '2' && to === `${from[0]}4`) {
+                            const middleSquare = `${from[0]}3`;
+                            if (!destPiece && !this.boardState[middleSquare]) {
+                                console.log(`White pawn can move two squares forward from starting position - VALID`);
+                                return true;
+                            }
+                        }
+                        
+                        // Capture diagonally
+                        const fileOffset = Math.abs(from.charCodeAt(0) - to.charCodeAt(0));
+                        const rankOffset = to[1] - from[1];
+                        if (fileOffset === 1 && rankOffset === 1 && destPiece && destPiece.color === 'black') {
+                            console.log(`White pawn can capture diagonally - VALID`);
+                            return true;
+                        }
+                    }
+                    
+                    // Black pawn
+                    if (piece.color === 'black') {
+                        // One square forward
+                        if (to === `${from[0]}${parseInt(from[1]) - 1}`) {
+                            if (!destPiece) {
+                                console.log(`Black pawn can move one square forward - VALID`);
+                                return true;
+                            }
+                        }
+                        
+                        // Two squares forward from starting position
+                        if (from[1] === '7' && to === `${from[0]}5`) {
+                            const middleSquare = `${from[0]}6`;
+                            if (!destPiece && !this.boardState[middleSquare]) {
+                                console.log(`Black pawn can move two squares forward from starting position - VALID`);
+                                return true;
+                            }
+                        }
+                        
+                        // Capture diagonally
+                        const fileOffset = Math.abs(from.charCodeAt(0) - to.charCodeAt(0));
+                        const rankOffset = from[1] - to[1];
+                        if (fileOffset === 1 && rankOffset === 1 && destPiece && destPiece.color === 'white') {
+                            console.log(`Black pawn can capture diagonally - VALID`);
+                            return true;
+                        }
+                    }
+                }
+                
+                // Basic knight moves
+                if (piece.type.toLowerCase() === 'n') {
+                    const fileOffset = Math.abs(from.charCodeAt(0) - to.charCodeAt(0));
+                    const rankOffset = Math.abs(from[1] - to[1]);
+                    
+                    if ((fileOffset === 1 && rankOffset === 2) || (fileOffset === 2 && rankOffset === 1)) {
+                        console.log(`Knight move is valid`);
+                        return true;
+                    }
+                }
+                
+                console.log(`Move from ${from} to ${to} is not valid`);
+                return false;
+            }
+
+            /**
+             * Select a square
+             * @param {string} squareId - ID of the square to select
+             */
+            selectSquare(squareId) {
+                // Deselect any currently selected square
+                this.deselectSquare();
+                
+                // Mark the new square as selected
+                const square = this.squares[squareId];
+                if (square) {
+                    square.classList.add('selected');
+                    this.selectedSquare = squareId;
+                    
+                    // Highlight legal moves for the selected piece
+                    this.highlightLegalMoves();
+                }
+            }
+
+            /**
+             * Deselect the currently selected square
+             */
+            deselectSquare() {
+                if (this.selectedSquare) {
+                    const square = this.squares[this.selectedSquare];
+                    if (square) {
+                        square.classList.remove('selected');
+                    }
+                    
+                    // Remove all highlights
+                    this.removeAllHighlights();
+                    
+                    this.selectedSquare = null;
+                }
+            }
+
+            /**
+             * Highlight legal moves for the selected piece
+             */
+            highlightLegalMoves() {
+                if (!this.selectedSquare) return;
+                
+                console.log(`Highlighting legal moves for ${this.selectedSquare}`);
+                
+                let highlightCount = 0;
+                
+                // First try to use the legal moves array
+                this.legalMoves.forEach(move => {
+                    if (move.from === this.selectedSquare) {
+                        const squareElement = this.squares[move.to];
+                        if (squareElement) {
+                            squareElement.classList.add('highlight');
+                            console.log(`Highlighted ${move.to} from legal moves array`);
+                            
+                            // If there's a piece on the target square, it's a capture
+                            if (this.boardState[move.to]) {
+                                squareElement.classList.add('capture');
+                            }
+                            
+                            highlightCount++;
+                        }
+                    }
+                });
+                
+                // If no legal moves were highlighted, use fallback rules
+                if (highlightCount === 0) {
+                    console.log('No legal moves found in array, using fallback rules');
+                    this.highlightFallbackLegalMoves();
+                    
+                    // Count highlighted squares after fallback
+                    const highlightedSquares = document.querySelectorAll('.square.highlight');
+                    console.log(`After fallback, highlighted ${highlightedSquares.length} legal moves`);
+                } else {
+                    console.log(`Highlighted ${highlightCount} legal moves from array`);
+                }
+            }
+            
+            /**
+             * Highlight legal moves based on basic chess rules when no legal moves are provided
+             * This is a fallback for initial position testing
+             */
+            highlightFallbackLegalMoves() {
+                if (!this.selectedSquare) return;
+                
+                const piece = this.boardState[this.selectedSquare];
+                if (!piece) return;
+                
+                const file = this.selectedSquare[0];
+                const rank = parseInt(this.selectedSquare[1]);
+                let highlightCount = 0;
+                
+                // Implement basic chess rules for pawns
+                if (piece.type.toLowerCase() === 'p') {
+                    if (piece.color === 'white') {
+                        // One square forward
+                        const oneSquareForward = `${file}${rank + 1}`;
+                        if (this.squares[oneSquareForward] && !this.boardState[oneSquareForward]) {
+                            this.squares[oneSquareForward].classList.add('highlight');
+                            console.log(`Fallback: Highlighted ${oneSquareForward} for white pawn`);
+                            highlightCount++;
+                        }
+                        
+                        // Two squares forward from starting position
+                        if (rank === 2) {
+                            const twoSquaresForward = `${file}4`;
+                            const intermediateSquare = `${file}3`;
+                            if (this.squares[twoSquaresForward] && !this.boardState[intermediateSquare] && !this.boardState[twoSquaresForward]) {
+                                this.squares[twoSquaresForward].classList.add('highlight');
+                                console.log(`Fallback: Highlighted ${twoSquaresForward} for white pawn from starting position`);
+                                highlightCount++;
+                            }
+                        }
+                        
+                        // Captures
+                        const leftCapture = String.fromCharCode(file.charCodeAt(0) - 1) + (rank + 1);
+                        const rightCapture = String.fromCharCode(file.charCodeAt(0) + 1) + (rank + 1);
+                        
+                        if (this.squares[leftCapture] && this.boardState[leftCapture] && 
+                            this.boardState[leftCapture].color === 'black') {
+                            this.squares[leftCapture].classList.add('highlight', 'capture');
+                            console.log(`Fallback: Highlighted ${leftCapture} for white pawn capture`);
+                            highlightCount++;
+                        }
+                        
+                        if (this.squares[rightCapture] && this.boardState[rightCapture] && 
+                            this.boardState[rightCapture].color === 'black') {
+                            this.squares[rightCapture].classList.add('highlight', 'capture');
+                            console.log(`Fallback: Highlighted ${rightCapture} for white pawn capture`);
+                            highlightCount++;
+                        }
+                    } else {
+                        // Black pawns
+                        // One square forward
+                        const oneSquareForward = `${file}${rank - 1}`;
+                        if (this.squares[oneSquareForward] && !this.boardState[oneSquareForward]) {
+                            this.squares[oneSquareForward].classList.add('highlight');
+                            console.log(`Fallback: Highlighted ${oneSquareForward} for black pawn`);
+                            highlightCount++;
+                        }
+                        
+                        // Two squares forward from starting position
+                        if (rank === 7) {
+                            const twoSquaresForward = `${file}5`;
+                            const intermediateSquare = `${file}6`;
+                            if (this.squares[twoSquaresForward] && !this.boardState[intermediateSquare] && !this.boardState[twoSquaresForward]) {
+                                this.squares[twoSquaresForward].classList.add('highlight');
+                                console.log(`Fallback: Highlighted ${twoSquaresForward} for black pawn from starting position`);
+                                highlightCount++;
+                            }
+                        }
+                        
+                        // Captures
+                        const leftCapture = String.fromCharCode(file.charCodeAt(0) - 1) + (rank - 1);
+                        const rightCapture = String.fromCharCode(file.charCodeAt(0) + 1) + (rank - 1);
+                        
+                        if (this.squares[leftCapture] && this.boardState[leftCapture] && 
+                            this.boardState[leftCapture].color === 'white') {
+                            this.squares[leftCapture].classList.add('highlight', 'capture');
+                            console.log(`Fallback: Highlighted ${leftCapture} for black pawn capture`);
+                            highlightCount++;
+                        }
+                        
+                        if (this.squares[rightCapture] && this.boardState[rightCapture] && 
+                            this.boardState[rightCapture].color === 'white') {
+                            this.squares[rightCapture].classList.add('highlight', 'capture');
+                            console.log(`Fallback: Highlighted ${rightCapture} for black pawn capture`);
+                            highlightCount++;
+                        }
+                    }
+                }
+                
+                // Knight moves
+                if (piece.type.toLowerCase() === 'n') {
+                    const fileCode = file.charCodeAt(0);
+                    const knightMoves = [
+                        { file: fileCode - 1, rank: rank + 2 }, // left + 2 up
+                        { file: fileCode + 1, rank: rank + 2 }, // right + 2 up
+                        { file: fileCode - 2, rank: rank + 1 }, // 2 left + up
+                        { file: fileCode + 2, rank: rank + 1 }, // 2 right + up
+                        { file: fileCode - 2, rank: rank - 1 }, // 2 left + down
+                        { file: fileCode + 2, rank: rank - 1 }, // 2 right + down
+                        { file: fileCode - 1, rank: rank - 2 }, // left + 2 down
+                        { file: fileCode + 1, rank: rank - 2 }, // right + 2 down
+                    ];
+                    
+                    knightMoves.forEach(move => {
+                        if (move.file >= 97 && move.file <= 104 && move.rank >= 1 && move.rank <= 8) {
+                            const targetSquare = String.fromCharCode(move.file) + move.rank;
+                            
+                            if (this.squares[targetSquare]) {
+                                const targetPiece = this.boardState[targetSquare];
+                                
+                                if (!targetPiece || targetPiece.color !== piece.color) {
+                                    this.squares[targetSquare].classList.add('highlight');
+                                    console.log(`Fallback: Highlighted ${targetSquare} for knight move`);
+                                    
+                                    if (targetPiece) {
+                                        this.squares[targetSquare].classList.add('capture');
+                                    }
+                                    
+                                    highlightCount++;
+                                }
+                            }
+                        }
+                    });
+                }
+            }
+
+            /**
+             * Remove all move highlights from the board
+             */
+            removeAllHighlights() {
+                Object.values(this.squares).forEach(square => {
+                    square.classList.remove('highlight', 'capture');
+                });
+            }
+
+            /**
+             * Make a move on the board
+             * @param {string} from - Starting square
+             * @param {string} to - Target square
+             */
+            makeMove(from, to) {
+                console.log(`Making move from ${from} to ${to}`);
+                
+                // Get the moving piece
+                const movingPiece = this.boardState[from];
+                
+                if (!movingPiece) {
+                    console.error(`No piece found at ${from}`);
+                    return;
+                }
+                
+                // Update internal board state
+                const newBoardState = {...this.boardState};
+                newBoardState[to] = newBoardState[from];
+                delete newBoardState[from];
+                
+                // Update the UI with the new state
+                this.updateBoardUI(newBoardState);
+                
+                // Update the last move highlight
+                this.updateLastMoveHighlight(from, to);
+                
+                // Deselect the square
+                this.deselectSquare();
+                
+                // Update the board state
+                this.boardState = newBoardState;
+                
+                console.log(`Move completed from ${from} to ${to}`);
+            }
+            
+            updateLastMoveHighlight(from, to) {
+                // Remove any existing last-move highlights
+                Object.values(this.squares).forEach(square => {
+                    square.classList.remove('last-move');
+                });
+                
+                // Highlight the from and to squares
+                if (this.squares[from]) {
+                    this.squares[from].classList.add('last-move');
+                }
+                
+                if (this.squares[to]) {
+                    this.squares[to].classList.add('last-move');
+                }
+                
+                // Save the last move
+                this.lastMove = { from, to };
+            }
+
+            /**
+             * Update the board with a new state
+             * @param {Object} boardState - Object mapping square names to pieces
+             * @param {Array} legalMoves - Array of legal moves
+             */
+            updateBoard(boardState, legalMoves = []) {
+                console.log('Updating board with new state');
+                
+                this.boardState = boardState;
+                
+                // Update legal moves
+                if (legalMoves && legalMoves.length > 0) {
+                    this.legalMoves = legalMoves;
+                    console.log(`Updated legal moves from server (${legalMoves.length} moves)`);
+                } else {
+                    // If no legal moves provided or array is empty, ensure default moves are available
+                    // Clear existing moves first to avoid duplicates
+                    this.legalMoves = [];
+                    // Add default moves
+                    this.addDefaultLegalMoves();
+                    console.log(`No legal moves provided, using default moves (${this.legalMoves.length} moves)`);
+                }
+                
+                this.updateBoardUI(boardState);
+            }
+            
+            /**
+             * Update just the UI representation of the board without changing the underlying board state
+             * This is for optimistic UI updates
+             * @param {Object} boardState - The board state to display
+             */
+            updateBoardUI(boardState) {
+                // Clear all pieces from the board
+                Object.values(this.squares).forEach(square => {
+                    square.innerHTML = '';
+                });
+                
+                // Add pieces based on the new board state
+                Object.entries(boardState).forEach(([squareId, pieceData]) => {
+                    const square = this.squares[squareId];
+                    if (square) {
+                        // Create piece element
+                        const pieceElement = document.createElement('div');
+                        pieceElement.className = 'piece';
+                        
+                        // Create image element
+                        const imgElement = document.createElement('img');
+                        imgElement.src = this.pieceImages[pieceData.code];
+                        imgElement.alt = pieceData.code;
+                        
+                        // Append image to piece, and piece to square
+                        pieceElement.appendChild(imgElement);
+                        square.appendChild(pieceElement);
+                    }
+                });
+            }
+
+            /**
+             * Check if a piece is friendly (belongs to the current player)
+             * @param {string} squareId - Square ID to check
+             * @returns {boolean} - Whether the piece is friendly
+             */
+            isPieceFriendly(squareId) {
+                const piece = this.boardState[squareId];
+                if (!piece) return false;
+                
+                return piece.color === 'white'; // For testing, always allow white pieces
+            }
+        }
+
+        // Initialize the board when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            // Create instance of the chessboard
+            window.chessboard = new ChessBoard();
+            
+            // Set up initial board state
+            const initialBoardState = {
+                // White pieces
+                'a1': { type: 'r', color: 'white', code: 'R' },
+                'b1': { type: 'n', color: 'white', code: 'N' },
+                'c1': { type: 'b', color: 'white', code: 'B' },
+                'd1': { type: 'q', color: 'white', code: 'Q' },
+                'e1': { type: 'k', color: 'white', code: 'K' },
+                'f1': { type: 'b', color: 'white', code: 'B' },
+                'g1': { type: 'n', color: 'white', code: 'N' },
+                'h1': { type: 'r', color: 'white', code: 'R' },
+                'a2': { type: 'p', color: 'white', code: 'P' },
+                'b2': { type: 'p', color: 'white', code: 'P' },
+                'c2': { type: 'p', color: 'white', code: 'P' },
+                'd2': { type: 'p', color: 'white', code: 'P' },
+                'e2': { type: 'p', color: 'white', code: 'P' },
+                'f2': { type: 'p', color: 'white', code: 'P' },
+                'g2': { type: 'p', color: 'white', code: 'P' },
+                'h2': { type: 'p', color: 'white', code: 'P' },
+                
+                // Black pieces
+                'a8': { type: 'r', color: 'black', code: 'r' },
+                'b8': { type: 'n', color: 'black', code: 'n' },
+                'c8': { type: 'b', color: 'black', code: 'b' },
+                'd8': { type: 'q', color: 'black', code: 'q' },
+                'e8': { type: 'k', color: 'black', code: 'k' },
+                'f8': { type: 'b', color: 'black', code: 'b' },
+                'g8': { type: 'n', color: 'black', code: 'n' },
+                'h8': { type: 'r', color: 'black', code: 'r' },
+                'a7': { type: 'p', color: 'black', code: 'p' },
+                'b7': { type: 'p', color: 'black', code: 'p' },
+                'c7': { type: 'p', color: 'black', code: 'p' },
+                'd7': { type: 'p', color: 'black', code: 'p' },
+                'e7': { type: 'p', color: 'black', code: 'p' },
+                'f7': { type: 'p', color: 'black', code: 'p' },
+                'g7': { type: 'p', color: 'black', code: 'p' },
+                'h7': { type: 'p', color: 'black', code: 'p' }
+            };
+            
+            // Initialize the board with the starting position
+            window.chessboard.updateBoard(initialBoardState);
+            
+            // Button event handlers
+            document.getElementById('reset-btn').addEventListener('click', function() {
+                window.chessboard.updateBoard(initialBoardState);
+                console.log('Board reset to initial position');
+            });
+            
+            document.getElementById('test-e2e4-btn').addEventListener('click', function() {
+                // Deselect any existing selection
+                window.chessboard.deselectSquare();
+                
+                // Select e2
+                console.log('Selecting e2 pawn');
+                window.chessboard.selectSquare('e2');
+                
+                // Wait a bit, then click e4
+                setTimeout(() => {
+                    console.log('Clicking e4');
+                    window.chessboard.handleSquareClick('e4');
+                }, 500);
+            });
+            
+            document.getElementById('debug-btn').addEventListener('click', function() {
+                // Print out the legal moves
+                console.log('Current legal moves:');
+                window.chessboard.legalMoves.forEach(move => {
+                    console.log(`- ${move.from} → ${move.to}`);
+                });
+                
+                // Test if e2-e4 is a legal move
+                const isE2E4Legal = window.chessboard.isLegalMove('e2', 'e4');
+                console.log(`Is e2-e4 legal? ${isE2E4Legal ? 'YES' : 'NO'}`);
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -27,20 +27,25 @@ class ChessBoard {
         };
         
         this.init();
-        this.addDefaultLegalMoves();
-        console.log('ChessBoard initialized');
     }
 
     /**
      * Initialize the chessboard
      */
     init() {
-        if (this.boardElement) {
-            this.createBoard();
-            this.setupEventListeners();
-        } else {
-            console.error('Board element not found');
+        console.log('Initializing chessboard');
+        this.createBoard();
+        this.setupEventListeners();
+        
+        // Add default legal moves for initial position
+        this.addDefaultLegalMoves();
+        
+        // Ensure legal moves are highlighted properly
+        if (this.selectedSquare) {
+            this.highlightLegalMoves();
         }
+        
+        console.log('Chessboard initialized');
     }
 
     /**
@@ -50,22 +55,37 @@ class ChessBoard {
     addDefaultLegalMoves() {
         console.log('Adding default legal moves for initial position');
         
-        // Add pawn moves
+        // Clear existing legal moves to avoid duplicates
+        this.legalMoves = [];
+        
+        // Add pawn moves for white pawns (from rank 2)
         const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
         
         files.forEach(file => {
             // White pawns can move one or two squares forward from rank 2
             this.legalMoves.push({ from: `${file}2`, to: `${file}3` });
             this.legalMoves.push({ from: `${file}2`, to: `${file}4` });
+            
+            // Black pawns can move one or two squares forward from rank 7
+            this.legalMoves.push({ from: `${file}7`, to: `${file}6` });
+            this.legalMoves.push({ from: `${file}7`, to: `${file}5` });
         });
         
-        // Add knight moves
+        // Add knight moves for both colors
+        // White knights
         this.legalMoves.push({ from: 'b1', to: 'a3' });
         this.legalMoves.push({ from: 'b1', to: 'c3' });
         this.legalMoves.push({ from: 'g1', to: 'f3' });
         this.legalMoves.push({ from: 'g1', to: 'h3' });
         
+        // Black knights
+        this.legalMoves.push({ from: 'b8', to: 'a6' });
+        this.legalMoves.push({ from: 'b8', to: 'c6' });
+        this.legalMoves.push({ from: 'g8', to: 'f6' });
+        this.legalMoves.push({ from: 'g8', to: 'h6' });
+        
         console.log(`Added ${this.legalMoves.length} default legal moves`);
+        console.log('Default moves:', this.legalMoves.map(m => `${m.from}->${m.to}`).join(', '));
     }
 
     /**
@@ -134,12 +154,12 @@ class ChessBoard {
      * @param {string} squareId - ID of the clicked square
      */
     handlePlayerSquareClick(squareId) {
-        const hasPiece = this.boardState[squareId] !== undefined;
+        console.log(`Player clicked ${squareId}`);
         
-        // If a square is already selected
+        // Check if a square is already selected
         if (this.selectedSquare) {
-            // If the clicked square is the same as the selected square, deselect it
-            if (squareId === this.selectedSquare) {
+            // If the same square is clicked again, deselect it
+            if (this.selectedSquare === squareId) {
                 console.log(`Deselecting ${squareId}`);
                 this.deselectSquare();
                 return;
@@ -147,24 +167,29 @@ class ChessBoard {
             
             // Check if the move is legal
             if (this.isLegalMove(this.selectedSquare, squareId)) {
-                console.log(`Making move from ${this.selectedSquare} to ${squareId}`);
-                this.makeMove(this.selectedSquare, squareId);
-            } else {
-                console.log(`Move from ${this.selectedSquare} to ${squareId} is not legal`);
+                console.log(`Legal move from ${this.selectedSquare} to ${squareId}`);
                 
-                // If the clicked square has a friendly piece, select it instead
-                if (hasPiece && this.isPieceFriendly(squareId)) {
-                    console.log(`Selecting new piece at ${squareId}`);
+                // Make the move
+                this.makeMove(this.selectedSquare, squareId);
+                
+                // Reset selection
+                this.deselectSquare();
+            } else {
+                console.log(`Deselecting ${this.selectedSquare} as the move to ${squareId} isn't valid`);
+                
+                // If the clicked square contains a friendly piece, select it instead
+                if (this.isPieceFriendly(squareId)) {
+                    console.log(`Selecting ${squareId} as it contains a friendly piece`);
                     this.selectSquare(squareId);
                 } else {
-                    // Deselect current piece since the move isn't valid
-                    console.log(`Deselecting ${this.selectedSquare} as the move isn't valid`);
+                    // Otherwise just deselect the current square
                     this.deselectSquare();
                 }
             }
-        } else if (hasPiece && this.isPieceFriendly(squareId)) {
-            // If no square is selected and clicked on a friendly piece, select it
-            console.log(`Selecting piece at ${squareId}`);
+        } 
+        // No square selected, try to select this one if it contains a friendly piece
+        else if (this.isPieceFriendly(squareId)) {
+            console.log(`Selecting ${squareId}`);
             this.selectSquare(squareId);
         }
     }
@@ -178,97 +203,117 @@ class ChessBoard {
     isLegalMove(from, to) {
         console.log(`Checking if move from ${from} to ${to} is legal`);
         
-        // First check if the move exists in the legal moves array
-        const moveExists = this.legalMoves.some(move => 
-            move.from === from && move.to === to
-        );
-        
-        if (moveExists) {
-            console.log(`Move from ${from} to ${to} found in legal moves`);
-            return true;
-        }
-        
-        // If we don't have legal moves or the move isn't in there, fall back to basic rules
-        console.log(`Move from ${from} to ${to} not found in legal moves, checking fallback rules`);
-        
-        // Get the piece at the "from" position
-        const piece = this.boardState[from];
-        if (!piece) {
-            console.log(`No piece found at ${from}`);
-            return false;
-        }
-        
-        // Check if there's a piece at the destination (can't capture our own pieces)
-        const destPiece = this.boardState[to];
-        if (destPiece && destPiece.color === piece.color) {
-            console.log(`Cannot capture own piece at ${to}`);
-            return false;
-        }
-        
-        // Implement basic chess rules for pawns
-        if (piece.type.toLowerCase() === 'p') {
-            // White pawn
-            if (piece.color === 'white') {
-                // One square forward
-                if (to === `${from[0]}${parseInt(from[1]) + 1}`) {
-                    if (!destPiece) { 
-                        return true;
-                    }
-                }
-                
-                // Two squares forward from starting position
-                if (from[1] === '2' && to === `${from[0]}4`) {
-                    const middleSquare = `${from[0]}3`;
-                    if (!destPiece && !this.boardState[middleSquare]) {
-                        return true;
-                    }
-                }
-                
-                // Capture diagonally
-                const fileOffset = Math.abs(from.charCodeAt(0) - to.charCodeAt(0));
-                const rankOffset = to[1] - from[1];
-                if (fileOffset === 1 && rankOffset === 1 && destPiece && destPiece.color === 'black') {
-                    return true;
-                }
-            }
-            
-            // Black pawn (for completeness)
-            if (piece.color === 'black') {
-                // One square forward
-                if (to === `${from[0]}${parseInt(from[1]) - 1}`) {
-                    if (!destPiece) {
-                        return true;
-                    }
-                }
-                
-                // Two squares forward from starting position
-                if (from[1] === '7' && to === `${from[0]}5`) {
-                    const middleSquare = `${from[0]}6`;
-                    if (!destPiece && !this.boardState[middleSquare]) {
-                        return true;
-                    }
-                }
-                
-                // Capture diagonally
-                const fileOffset = Math.abs(from.charCodeAt(0) - to.charCodeAt(0));
-                const rankOffset = from[1] - to[1];
-                if (fileOffset === 1 && rankOffset === 1 && destPiece && destPiece.color === 'white') {
-                    return true;
-                }
-            }
-        }
-        
-        // Basic knight moves
-        if (piece.type.toLowerCase() === 'n') {
-            const fileOffset = Math.abs(from.charCodeAt(0) - to.charCodeAt(0));
-            const rankOffset = Math.abs(from[1] - to[1]);
-            
-            if ((fileOffset === 1 && rankOffset === 2) || (fileOffset === 2 && rankOffset === 1)) {
+        // First check if the move is in the list of legal moves
+        for (const move of this.legalMoves) {
+            if (move.from === from && move.to === to) {
+                console.log(`Found move in legal moves list: ${from} to ${to}`);
                 return true;
             }
         }
         
-        console.log(`Move from ${from} to ${to} is not legal according to fallback rules`);
+        console.log(`Move ${from} to ${to} not found in legal moves list. Checking fallback rules...`);
+        
+        // Fallback rules for initial pawn moves (white)
+        if (this.boardState[from] && this.boardState[from].type === 'p' && 
+            this.boardState[from].color === 'white') {
+            
+            // White pawns move up (decrease row number)
+            const fromCol = from.charAt(0);
+            const fromRow = parseInt(from.charAt(1));
+            const toCol = to.charAt(0);
+            const toRow = parseInt(to.charAt(1));
+            
+            // Check if it's a valid pawn move
+            if (fromCol === toCol) {
+                // Straight move - check if destination is empty
+                if (!this.boardState[to]) {
+                    // One square forward
+                    if (toRow === fromRow + 1) {
+                        console.log(`Valid white pawn move: ${from} to ${to} (one square forward)`);
+                        return true;
+                    }
+                    
+                    // Two squares forward from starting position
+                    if (fromRow === 2 && toRow === 4 && !this.boardState[`${fromCol}3`]) {
+                        console.log(`Valid white pawn move: ${from} to ${to} (two squares from start)`);
+                        return true;
+                    }
+                }
+            } 
+            // Diagonal capture
+            else if ((toCol === String.fromCharCode(fromCol.charCodeAt(0) - 1) || 
+                     toCol === String.fromCharCode(fromCol.charCodeAt(0) + 1)) && 
+                     toRow === fromRow + 1) {
+                
+                // Check if there's an opponent's piece to capture
+                if (this.boardState[to] && this.boardState[to].color === 'black') {
+                    console.log(`Valid white pawn capture: ${from} to ${to}`);
+                    return true;
+                }
+            }
+        }
+        
+        // Fallback rules for initial pawn moves (black)
+        if (this.boardState[from] && this.boardState[from].type === 'p' && 
+            this.boardState[from].color === 'black') {
+            
+            // Black pawns move down (increase row number)
+            const fromCol = from.charAt(0);
+            const fromRow = parseInt(from.charAt(1));
+            const toCol = to.charAt(0);
+            const toRow = parseInt(to.charAt(1));
+            
+            // Check if it's a valid pawn move
+            if (fromCol === toCol) {
+                // Straight move - check if destination is empty
+                if (!this.boardState[to]) {
+                    // One square forward
+                    if (toRow === fromRow - 1) {
+                        console.log(`Valid black pawn move: ${from} to ${to} (one square forward)`);
+                        return true;
+                    }
+                    
+                    // Two squares forward from starting position
+                    if (fromRow === 7 && toRow === 5 && !this.boardState[`${fromCol}6`]) {
+                        console.log(`Valid black pawn move: ${from} to ${to} (two squares from start)`);
+                        return true;
+                    }
+                }
+            } 
+            // Diagonal capture
+            else if ((toCol === String.fromCharCode(fromCol.charCodeAt(0) - 1) || 
+                     toCol === String.fromCharCode(fromCol.charCodeAt(0) + 1)) && 
+                     toRow === fromRow - 1) {
+                
+                // Check if there's an opponent's piece to capture
+                if (this.boardState[to] && this.boardState[to].color === 'white') {
+                    console.log(`Valid black pawn capture: ${from} to ${to}`);
+                    return true;
+                }
+            }
+        }
+        
+        // Fallback rules for knight moves
+        if (this.boardState[from] && this.boardState[from].type === 'n') {
+            const fromCol = from.charCodeAt(0) - 'a'.charCodeAt(0);
+            const fromRow = parseInt(from.charAt(1)) - 1;
+            const toCol = to.charCodeAt(0) - 'a'.charCodeAt(0);
+            const toRow = parseInt(to.charAt(1)) - 1;
+            
+            // Knight moves in L-shape: 2 squares in one direction and 1 square in the perpendicular direction
+            const colDiff = Math.abs(toCol - fromCol);
+            const rowDiff = Math.abs(toRow - fromRow);
+            
+            if ((colDiff === 1 && rowDiff === 2) || (colDiff === 2 && rowDiff === 1)) {
+                // Check if destination square doesn't contain a friendly piece
+                if (!this.boardState[to] || this.boardState[to].color !== this.boardState[from].color) {
+                    console.log(`Valid knight move: ${from} to ${to}`);
+                    return true;
+                }
+            }
+        }
+        
+        console.log(`Move ${from} to ${to} is not legal according to fallback rules`);
         return false;
     }
 
@@ -316,13 +361,19 @@ class ChessBoard {
      * Highlight legal moves for the selected piece
      */
     highlightLegalMoves() {
-        if (!this.selectedSquare) return;
+        if (!this.selectedSquare) {
+            console.log('No square selected, cannot highlight legal moves');
+            return;
+        }
         
         console.log(`Highlighting legal moves for ${this.selectedSquare}`);
         
+        // Remove any existing highlights first
+        this.removeAllHighlights();
+        
         let highlightCount = 0;
         
-        // First try to use the legal moves array
+        // First try to highlight moves from the legal moves array
         this.legalMoves.forEach(move => {
             if (move.from === this.selectedSquare) {
                 const squareElement = this.squares[move.to];
@@ -332,6 +383,9 @@ class ChessBoard {
                     // If there's a piece on the target square, it's a capture
                     if (this.boardState[move.to]) {
                         squareElement.classList.add('capture');
+                        console.log(`Highlighted ${move.to} as capture`);
+                    } else {
+                        console.log(`Highlighted ${move.to} as regular move`);
                     }
                     
                     highlightCount++;
@@ -341,10 +395,14 @@ class ChessBoard {
         
         // If no legal moves were highlighted, use fallback rules
         if (highlightCount === 0) {
-            console.log('No legal moves found in array, using fallback rules');
+            console.log(`No legal moves found in array for ${this.selectedSquare}, using fallback rules`);
             this.highlightFallbackLegalMoves();
+            
+            // Count highlighted squares after fallback
+            const highlightedSquares = document.querySelectorAll('.square.highlight');
+            console.log(`Fallback highlighting added ${highlightedSquares.length} moves`);
         } else {
-            console.log(`Highlighted ${highlightCount} legal moves`);
+            console.log(`Highlighted ${highlightCount} legal moves for ${this.selectedSquare}`);
         }
     }
     
@@ -360,6 +418,7 @@ class ChessBoard {
         
         const file = this.selectedSquare[0];
         const rank = parseInt(this.selectedSquare[1]);
+        let highlightCount = 0;
         
         // Implement basic chess rules for pawns
         if (piece.type.toLowerCase() === 'p') {
@@ -368,13 +427,18 @@ class ChessBoard {
                 const oneSquareForward = `${file}${rank + 1}`;
                 if (this.squares[oneSquareForward] && !this.boardState[oneSquareForward]) {
                     this.squares[oneSquareForward].classList.add('highlight');
+                    console.log(`Fallback: Highlighted ${oneSquareForward} for white pawn`);
+                    highlightCount++;
                 }
                 
                 // Two squares forward from starting position
                 if (rank === 2) {
                     const twoSquaresForward = `${file}4`;
-                    if (!this.boardState[oneSquareForward] && !this.boardState[twoSquaresForward]) {
+                    const intermediateSquare = `${file}3`;
+                    if (this.squares[twoSquaresForward] && !this.boardState[intermediateSquare] && !this.boardState[twoSquaresForward]) {
                         this.squares[twoSquaresForward].classList.add('highlight');
+                        console.log(`Fallback: Highlighted ${twoSquaresForward} for white pawn from starting position`);
+                        highlightCount++;
                     }
                 }
                 
@@ -385,15 +449,54 @@ class ChessBoard {
                 if (this.squares[leftCapture] && this.boardState[leftCapture] && 
                     this.boardState[leftCapture].color === 'black') {
                     this.squares[leftCapture].classList.add('highlight', 'capture');
+                    console.log(`Fallback: Highlighted ${leftCapture} for white pawn capture`);
+                    highlightCount++;
                 }
                 
                 if (this.squares[rightCapture] && this.boardState[rightCapture] && 
                     this.boardState[rightCapture].color === 'black') {
                     this.squares[rightCapture].classList.add('highlight', 'capture');
+                    console.log(`Fallback: Highlighted ${rightCapture} for white pawn capture`);
+                    highlightCount++;
                 }
             } else {
-                // Similar logic for black pawns
-                // (omitted for brevity, but should be implemented for completeness)
+                // Black pawns
+                // One square forward
+                const oneSquareForward = `${file}${rank - 1}`;
+                if (this.squares[oneSquareForward] && !this.boardState[oneSquareForward]) {
+                    this.squares[oneSquareForward].classList.add('highlight');
+                    console.log(`Fallback: Highlighted ${oneSquareForward} for black pawn`);
+                    highlightCount++;
+                }
+                
+                // Two squares forward from starting position
+                if (rank === 7) {
+                    const twoSquaresForward = `${file}5`;
+                    const intermediateSquare = `${file}6`;
+                    if (this.squares[twoSquaresForward] && !this.boardState[intermediateSquare] && !this.boardState[twoSquaresForward]) {
+                        this.squares[twoSquaresForward].classList.add('highlight');
+                        console.log(`Fallback: Highlighted ${twoSquaresForward} for black pawn from starting position`);
+                        highlightCount++;
+                    }
+                }
+                
+                // Captures
+                const leftCapture = String.fromCharCode(file.charCodeAt(0) - 1) + (rank - 1);
+                const rightCapture = String.fromCharCode(file.charCodeAt(0) + 1) + (rank - 1);
+                
+                if (this.squares[leftCapture] && this.boardState[leftCapture] && 
+                    this.boardState[leftCapture].color === 'white') {
+                    this.squares[leftCapture].classList.add('highlight', 'capture');
+                    console.log(`Fallback: Highlighted ${leftCapture} for black pawn capture`);
+                    highlightCount++;
+                }
+                
+                if (this.squares[rightCapture] && this.boardState[rightCapture] && 
+                    this.boardState[rightCapture].color === 'white') {
+                    this.squares[rightCapture].classList.add('highlight', 'capture');
+                    console.log(`Fallback: Highlighted ${rightCapture} for black pawn capture`);
+                    highlightCount++;
+                }
             }
         }
         
@@ -438,15 +541,14 @@ class ChessBoard {
     }
 
     /**
-     * Make a move on the chessboard
-     * @param {string} from - Starting square (e.g., 'e2')
-     * @param {string} to - Target square (e.g., 'e4')
+     * Make a move on the board
+     * @param {string} from - Starting square
+     * @param {string} to - Target square
      */
     makeMove(from, to) {
         console.log(`Making move from ${from} to ${to}`);
         
-        // Optimistically update the UI
-        const originalBoardState = JSON.parse(JSON.stringify(this.boardState));
+        // Get the moving piece
         const movingPiece = this.boardState[from];
         
         if (!movingPiece) {
@@ -454,20 +556,15 @@ class ChessBoard {
             return;
         }
         
-        // Store the move being made
-        const move = {
-            from,
-            to,
-            piece: movingPiece,
-            capturedPiece: this.boardState[to]
-        };
+        // Store the original board state before making the move
+        const originalBoardState = { ...this.boardState };
         
-        // Update internal board state optimistically
-        const newBoardState = {...this.boardState};
-        newBoardState[to] = newBoardState[from];
+        // Create new board state (optimistic update)
+        const newBoardState = { ...this.boardState };
+        newBoardState[to] = { ...newBoardState[from] };
         delete newBoardState[from];
         
-        // Update the UI with the new state
+        // Update the UI optimistically
         this.updateBoardUI(newBoardState);
         
         // Update the last move highlight
@@ -476,8 +573,13 @@ class ChessBoard {
         // Deselect the square
         this.deselectSquare();
         
-        // Send the move to the backend
+        // Send move to backend
         this.sendMoveToBackend(from, to, movingPiece, originalBoardState);
+        
+        // Update the internal board state with the optimistic update
+        this.boardState = newBoardState;
+        
+        console.log(`Move completed from ${from} to ${to}`);
     }
     
     updateLastMoveHighlight(from, to) {
@@ -592,17 +694,30 @@ class ChessBoard {
      * @param {Array} legalMoves - Array of legal moves
      */
     updateBoard(boardState, legalMoves = []) {
-        console.log('Updating board with new state');
+        console.log('Updating board state');
         
+        // Update board state
         this.boardState = boardState;
         
-        // Update legal moves
-        if (legalMoves.length > 0) {
+        // Update legal moves if provided, otherwise keep existing ones
+        if (legalMoves && Array.isArray(legalMoves)) {
+            console.log(`Setting ${legalMoves.length} legal moves`);
             this.legalMoves = legalMoves;
-            console.log(`Updated legal moves (${legalMoves.length} moves)`);
+            
+            // If no legal moves are provided, add default ones
+            if (this.legalMoves.length === 0) {
+                console.log('No legal moves provided, adding default legal moves');
+                this.addDefaultLegalMoves();
+            }
         }
         
+        // Update board UI
         this.updateBoardUI(boardState);
+        
+        // Highlight last move if any
+        if (this.lastMove) {
+            this.highlightLastMove();
+        }
     }
     
     /**
