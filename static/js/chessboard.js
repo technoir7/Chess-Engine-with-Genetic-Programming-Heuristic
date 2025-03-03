@@ -193,7 +193,7 @@ class ChessBoard {
      * @param {Array} legalMoves - Array of legal move objects
      */
     updateBoard(boardState, legalMoves = []) {
-        console.log("Updating chessboard with state:", boardState);
+        console.log("Updating chessboard with state:", JSON.stringify(boardState, null, 2));
         
         this.boardState = boardState;
         this.legalMoves = legalMoves;
@@ -203,18 +203,35 @@ class ChessBoard {
             this.squares[squareId].innerHTML = '';
         }
         
+        // Check if the boardState is valid
+        if (!boardState || typeof boardState !== 'object') {
+            console.error("Invalid boardState received:", boardState);
+            return;
+        }
+        
         // Place pieces according to the new state
+        let piecesPlaced = 0;
         for (const squareId in boardState) {
             const pieceData = boardState[squareId];
+            
+            // Validate piece data
+            if (!pieceData || !pieceData.type || !pieceData.color) {
+                console.error(`Invalid piece data at ${squareId}:`, pieceData);
+                continue;
+            }
+            
             console.log(`Placing ${pieceData.color} ${pieceData.type} on ${squareId}`);
             this.placePiece(squareId, pieceData.type, pieceData.color);
+            piecesPlaced++;
         }
+        
+        console.log(`Placed ${piecesPlaced} pieces on the board`);
     }
 
     /**
      * Place a piece on the board
      * @param {string} squareId - Square ID (e.g., 'e4')
-     * @param {string} pieceType - Type of piece (e.g., 'p', 'r', 'n', etc.)
+     * @param {string} pieceType - Type of piece (e.g., 'pawn', 'rook', 'knight', etc.)
      * @param {string} pieceColor - Color of the piece ('white' or 'black')
      */
     placePiece(squareId, pieceType, pieceColor) {
@@ -228,11 +245,25 @@ class ChessBoard {
         const pieceElement = document.createElement('div');
         pieceElement.className = 'piece';
         
-        // Determine which piece image to use based on type and color
-        let pieceCode = pieceType.toLowerCase();
+        // Map the full piece type to its one-letter code
+        const pieceTypeMap = {
+            'pawn': 'p',
+            'rook': 'r',
+            'knight': 'n',
+            'bishop': 'b',
+            'queen': 'q',
+            'king': 'k'
+        };
+        
+        // Convert the piece type to its one-letter code
+        let pieceCode = pieceTypeMap[pieceType.toLowerCase()] || pieceType.charAt(0).toLowerCase();
+        
+        // Uppercase for white pieces
         if (pieceColor === 'white') {
             pieceCode = pieceCode.toUpperCase();
         }
+        
+        console.log(`Mapped ${pieceColor} ${pieceType} to piece code ${pieceCode}`);
         
         // Create an img element for the SVG
         const imgElement = document.createElement('img');
