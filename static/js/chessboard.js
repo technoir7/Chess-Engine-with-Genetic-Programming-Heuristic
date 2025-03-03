@@ -323,19 +323,19 @@ class ChessBoard {
     }
 
     /**
-     * Update the board with a new state
-     * @param {Object} boardState - Object mapping square IDs to pieces
-     * @param {Array} legalMoves - Array of legal move objects
+     * Update the board state with the given boardState object
+     * @param {Object} boardState - Map of square IDs to piece objects
+     * @param {Array} legalMoves - Array of legal moves for the selected piece
      */
     updateBoard(boardState, legalMoves = []) {
-        console.log("Updating chessboard with state:", JSON.stringify(boardState, null, 2));
+        console.log("Updating board with new state");
         
-        this.boardState = boardState;
-        this.legalMoves = legalMoves;
-        
-        // Clear all squares
+        // Clear all pieces from the board
         for (const squareId in this.squares) {
-            this.squares[squareId].innerHTML = '';
+            const square = this.squares[squareId];
+            while (square.firstChild) {
+                square.removeChild(square.firstChild);
+            }
         }
         
         // Check if the boardState is valid
@@ -343,6 +343,16 @@ class ChessBoard {
             console.error("Invalid boardState received:", boardState);
             return;
         }
+
+        // Validate that we have the expected number of pieces
+        const pieceCount = Object.keys(boardState).length;
+        if (pieceCount < 32) {
+            console.warn(`Board only has ${pieceCount} pieces, which is less than the expected 32 pieces.`);
+        }
+        
+        // Count pieces by color for debugging
+        let whitePieces = 0;
+        let blackPieces = 0;
         
         // Place pieces according to the new state
         let piecesPlaced = 0;
@@ -355,12 +365,31 @@ class ChessBoard {
                 continue;
             }
             
+            // Count by color for debugging
+            if (pieceData.color === 'white') {
+                whitePieces++;
+            } else if (pieceData.color === 'black') {
+                blackPieces++;
+            }
+            
             console.log(`Placing ${pieceData.color} ${pieceData.type} on ${squareId}`);
             this.placePiece(squareId, pieceData.type, pieceData.color);
             piecesPlaced++;
         }
         
-        console.log(`Placed ${piecesPlaced} pieces on the board`);
+        console.log(`Placed ${piecesPlaced} pieces on the board (${whitePieces} white, ${blackPieces} black)`);
+        
+        // Store the board state
+        this.boardState = boardState;
+        this.legalMoves = legalMoves;
+        
+        // Highlight legal moves if a square is selected
+        if (this.selectedSquare) {
+            this.highlightLegalMoves();
+        }
+        
+        // Highlight the last move
+        this.highlightLastMove();
     }
 
     /**
@@ -377,8 +406,25 @@ class ChessBoard {
             return;
         }
         
+        // Clear any existing piece
+        while (square.firstChild) {
+            square.removeChild(square.firstChild);
+        }
+        
         const pieceElement = document.createElement('div');
         pieceElement.className = 'piece';
+        
+        // Validate inputs to prevent issues
+        if (!pieceType || typeof pieceType !== 'string' || pieceType.length === 0) {
+            console.error(`Invalid piece type: ${pieceType}`);
+            return;
+        }
+        
+        if (!pieceColor || typeof pieceColor !== 'string' || 
+            (pieceColor !== 'white' && pieceColor !== 'black')) {
+            console.error(`Invalid piece color: ${pieceColor}`);
+            return;
+        }
         
         // Map the full piece type to its one-letter code
         const pieceTypeMap = {
@@ -399,6 +445,24 @@ class ChessBoard {
         }
         
         console.log(`Mapped ${pieceColor} ${pieceType} to piece code ${pieceCode}`);
+        
+        // Create the image path based on color and type
+        const imagePath = `/static/images/pieces/${pieceColor}-${pieceType}.svg`;
+        
+        // Ensure piece image exists
+        if (!this.pieceImages[pieceCode]) {
+            console.error(`No image found for piece code ${pieceCode}, using calculated path instead`);
+            
+            // Create an img element for the SVG
+            const imgElement = document.createElement('img');
+            imgElement.src = imagePath;
+            imgElement.alt = `${pieceColor} ${pieceType}`;
+            imgElement.draggable = false; // Prevent default drag behavior
+            
+            pieceElement.appendChild(imgElement);
+            square.appendChild(pieceElement);
+            return;
+        }
         
         // Create an img element for the SVG
         const imgElement = document.createElement('img');
