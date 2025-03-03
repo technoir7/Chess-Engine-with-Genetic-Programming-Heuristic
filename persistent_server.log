@@ -267,3 +267,45 @@
 2025-03-03 03:03:45,994 - WARNING - Attempting to restart server (attempt 9/10)
 2025-03-03 03:03:46,838 - INFO - Received signal 2, shutting down...
 2025-03-03 03:03:46,838 - INFO - Shutdown complete
+2025-03-03 03:04:28,325 - INFO - Starting Persistent Server for Genetic Chess Engine
+2025-03-03 03:04:28,325 - INFO - Configuration: host=0.0.0.0, port=5000, debug=False
+2025-03-03 03:04:28,415 - INFO - Starting server with Gunicorn on 0.0.0.0:5000 (debug=False)
+2025-03-03 03:04:28,416 - INFO - Server started with PID 96632
+2025-03-03 03:04:28,416 - INFO - Waiting for server to start...
+2025-03-03 03:04:28,510 - INFO - [SERVER] [2025-03-03 03:04:28 -0800] [96632] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:04:28,510 - INFO - [SERVER] [2025-03-03 03:04:28 -0800] [96632] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:04:29,424 - INFO - Server is up and running!
+2025-03-03 03:04:29,425 - INFO - Starting server monitoring (interval=5s, max_restarts=10)
+2025-03-03 03:04:29,511 - INFO - [SERVER] [2025-03-03 03:04:29 -0800] [96632] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:04:29,511 - INFO - [SERVER] [2025-03-03 03:04:29 -0800] [96632] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:04:30,511 - INFO - [SERVER] [2025-03-03 03:04:30 -0800] [96632] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:04:30,512 - INFO - [SERVER] [2025-03-03 03:04:30 -0800] [96632] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:04:31,512 - INFO - [SERVER] [2025-03-03 03:04:31 -0800] [96632] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:04:31,513 - INFO - [SERVER] [2025-03-03 03:04:31 -0800] [96632] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:04:32,513 - INFO - [SERVER] [2025-03-03 03:04:32 -0800] [96632] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:04:32,514 - INFO - [SERVER] [2025-03-03 03:04:32 -0800] [96632] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:04:33,514 - INFO - [SERVER] [2025-03-03 03:04:33 -0800] [96632] [ERROR] Can't connect to ('0.0.0.0', 5000)
+2025-03-03 03:04:34,428 - WARNING - Server process has terminated (exit code: 1)
+2025-03-03 03:04:34,428 - WARNING - Attempting to restart server (attempt 1/10)
+2025-03-03 03:04:35,550 - INFO - Starting server with Gunicorn on 0.0.0.0:5000 (debug=False)
+2025-03-03 03:04:35,550 - INFO - Server started with PID 96739
+2025-03-03 03:04:35,551 - INFO - Waiting for server to start...
+2025-03-03 03:04:35,645 - INFO - [SERVER] [2025-03-03 03:04:35 -0800] [96739] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:04:35,645 - INFO - [SERVER] [2025-03-03 03:04:35 -0800] [96739] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:04:36,557 - INFO - Server is up and running!
+2025-03-03 03:04:36,558 - INFO - Server restarted successfully
+2025-03-03 03:04:36,646 - INFO - [SERVER] [2025-03-03 03:04:36 -0800] [96739] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:04:36,646 - INFO - [SERVER] [2025-03-03 03:04:36 -0800] [96739] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:04:36,843 - INFO - Received signal 2, shutting down...
+2025-03-03 03:04:36,844 - INFO - Terminating server process (PID: 96739)
+2025-03-03 03:04:37,647 - INFO - [SERVER] [2025-03-03 03:04:37 -0800] [96739] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:04:37,647 - INFO - [SERVER] [2025-03-03 03:04:37 -0800] [96739] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:04:38,366 - INFO - Received signal 2, shutting down...
+2025-03-03 03:04:38,366 - INFO - Terminating server process (PID: 96739)
+2025-03-03 03:04:38,648 - INFO - [SERVER] [2025-03-03 03:04:38 -0800] [96739] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:04:38,648 - INFO - [SERVER] [2025-03-03 03:04:38 -0800] [96739] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:04:39,649 - INFO - [SERVER] [2025-03-03 03:04:39 -0800] [96739] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:04:39,649 - INFO - [SERVER] [2025-03-03 03:04:39 -0800] [96739] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:04:40,650 - INFO - [SERVER] [2025-03-03 03:04:40 -0800] [96739] [ERROR] Can't connect to ('0.0.0.0', 5000)
+2025-03-03 03:04:40,706 - INFO - Server process terminated gracefully
+2025-03-03 03:04:40,707 - INFO - Shutdown complete

@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Legal Moves Tests</title>
+    
+    <!-- Load chess board styles -->
+    <link rel="stylesheet" href="/static/css/chessboard.css">
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-container {
+            display: flex;
+            flex-direction: row;
+            margin-top: 20px;
+        }
+        
+        .board-container {
+            flex: 1;
+        }
+        
+        .log-container {
+            flex: 1;
+            margin-left: 20px;
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        #chessboard {
+            width: 500px;
+            height: 500px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border: 2px solid #333;
+        }
+        
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        .light {
+            background-color: #f0d9b5;
+        }
+        
+        .dark {
+            background-color: #b58863;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        
+        #test-log {
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        
+        .debug-info {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+        }
+        
+        .test-button {
+            background-color: #2196F3;
+        }
+        
+        .debug-button {
+            background-color: #FF9800;
+        }
+        
+        .reset-button {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chess Legal Moves Tests</h1>
+    <p>This page tests the legal move detection and highlighting functionality of the chessboard.</p>
+    
+    <div class="controls">
+        <button id="run-all-tests-btn" class="test-button">Run All Tests</button>
+        <button id="test-default-legal-moves-btn" class="test-button">Test Default Legal Moves</button>
+        <button id="test-is-legal-move-btn" class="test-button">Test isLegalMove Function</button>
+        <button id="test-highlighting-btn" class="test-button">Test Move Highlighting</button>
+        <button id="test-movement-btn" class="test-button">Test Piece Movement</button>
+        <button id="test-board-state-btn" class="test-button">Test Board State</button>
+        <button id="reset-board-btn" class="reset-button">Reset Board</button>
+    </div>
+    
+    <div class="controls">
+        <button id="debug-legal-moves-btn" class="debug-button">Debug Legal Moves</button>
+        <button id="debug-e2e4-btn" class="debug-button">Test e2-e4 Move</button>
+        <button id="fix-legal-moves-btn" class="debug-button">Fix Legal Moves</button>
+    </div>
+    
+    <div class="test-container">
+        <div class="board-container">
+            <div id="chessboard"></div>
+            <!-- Other game UI elements -->
+            <div id="game-status"></div>
+            <div id="move-history"></div>
+            <div id="loading-overlay" style="display: none;"></div>
+            <div id="loading-message" style="display: none;"></div>
+            <div id="notification" style="display: none;"></div>
+            
+            <div class="debug-info">
+                <h3>Debug Information</h3>
+                <div id="debug-info">Click "Debug Legal Moves" to see information about the current legal moves.</div>
+            </div>
+        </div>
+        
+        <div class="log-container">
+            <h3>Test Log</h3>
+            <div id="test-log"></div>
+        </div>
+    </div>
+    
+    <!-- Replace console.log for the test output -->
+    <script>
+        // Override console methods to also output to our log element
+        const logElement = document.getElementById('test-log');
+        
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleInfo = console.info;
+        
+        console.log = function() {
+            const args = Array.from(arguments);
+            const message = args.join(' ');
+            
+            // Still log to the browser console
+            originalConsoleLog.apply(console, args);
+            
+            // Add to our log element
+            if (logElement) {
+                const logLine = document.createElement('div');
+                logLine.textContent = message;
+                
+                if (message.includes('✅ PASS')) {
+                    logLine.className = 'success';
+                }
+                
+                logElement.appendChild(logLine);
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+        };
+        
+        console.error = function() {
+            const args = Array.from(arguments);
+            const message = args.join(' ');
+            
+            // Still log to the browser console
+            originalConsoleError.apply(console, args);
+            
+            // Add to our log element with error styling
+            if (logElement) {
+                const logLine = document.createElement('div');
+                logLine.textContent = message;
+                logLine.className = 'error';
+                
+                logElement.appendChild(logLine);
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+        };
+        
+        console.info = function() {
+            const args = Array.from(arguments);
+            const message = args.join(' ');
+            
+            // Still log to the browser console
+            originalConsoleInfo.apply(console, args);
+            
+            // Add to our log element
+            if (logElement) {
+                const logLine = document.createElement('div');
+                logLine.textContent = message;
+                logLine.style.color = "#0066cc";
+                
+                logElement.appendChild(logLine);
+                logElement.scrollTop = logElement.scrollHeight;
+            }
+        };
+    </script>
+    
+    <!-- Load JS in the right order -->
+    <script src="/static/js/chessboard.js"></script>
+    <script src="/static/js/game.js"></script>
+    <script src="/static/js/tests/legal_moves_test.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Store a reference to the chessboard on window
+            window.chessboard = new ChessBoard();
+            
+            // Set up initial board state with legal moves for testing
+            const initialBoardState = {
+                // White pieces
+                'a1': { type: 'r', color: 'white', code: 'R' },
+                'b1': { type: 'n', color: 'white', code: 'N' },
+                'c1': { type: 'b', color: 'white', code: 'B' },
+                'd1': { type: 'q', color: 'white', code: 'Q' },
+                'e1': { type: 'k', color: 'white', code: 'K' },
+                'f1': { type: 'b', color: 'white', code: 'B' },
+                'g1': { type: 'n', color: 'white', code: 'N' },
+                'h1': { type: 'r', color: 'white', code: 'R' },
+                'a2': { type: 'p', color: 'white', code: 'P' },
+                'b2': { type: 'p', color: 'white', code: 'P' },
+                'c2': { type: 'p', color: 'white', code: 'P' },
+                'd2': { type: 'p', color: 'white', code: 'P' },
+                'e2': { type: 'p', color: 'white', code: 'P' },
+                'f2': { type: 'p', color: 'white', code: 'P' },
+                'g2': { type: 'p', color: 'white', code: 'P' },
+                'h2': { type: 'p', color: 'white', code: 'P' },
+                
+                // Black pieces
+                'a8': { type: 'r', color: 'black', code: 'r' },
+                'b8': { type: 'n', color: 'black', code: 'n' },
+                'c8': { type: 'b', color: 'black', code: 'b' },
+                'd8': { type: 'q', color: 'black', code: 'q' },
+                'e8': { type: 'k', color: 'black', code: 'k' },
+                'f8': { type: 'b', color: 'black', code: 'b' },
+                'g8': { type: 'n', color: 'black', code: 'n' },
+                'h8': { type: 'r', color: 'black', code: 'r' },
+                'a7': { type: 'p', color: 'black', code: 'p' },
+                'b7': { type: 'p', color: 'black', code: 'p' },
+                'c7': { type: 'p', color: 'black', code: 'p' },
+                'd7': { type: 'p', color: 'black', code: 'p' },
+                'e7': { type: 'p', color: 'black', code: 'p' },
+                'f7': { type: 'p', color: 'black', code: 'p' },
+                'g7': { type: 'p', color: 'black', code: 'p' },
+                'h7': { type: 'p', color: 'black', code: 'p' }
+            };
+            
+            // Initial legal moves for white (pawn and knight moves)
+            const initialLegalMoves = [
+                { from: 'a2', to: 'a3' },
+                { from: 'a2', to: 'a4' },
+                { from: 'b2', to: 'b3' },
+                { from: 'b2', to: 'b4' },
+                { from: 'c2', to: 'c3' },
+                { from: 'c2', to: 'c4' },
+                { from: 'd2', to: 'd3' },
+                { from: 'd2', to: 'd4' },
+                { from: 'e2', to: 'e3' },
+                { from: 'e2', to: 'e4' },
+                { from: 'f2', to: 'f3' },
+                { from: 'f2', to: 'f4' },
+                { from: 'g2', to: 'g3' },
+                { from: 'g2', to: 'g4' },
+                { from: 'h2', to: 'h3' },
+                { from: 'h2', to: 'h4' },
+                { from: 'b1', to: 'a3' },
+                { from: 'b1', to: 'c3' },
+                { from: 'g1', to: 'f3' },
+                { from: 'g1', to: 'h3' }
+            ];
+            
+            // Initialize the board
+            window.chessboard.updateBoard(initialBoardState, initialLegalMoves);
+            
+            // Setup game active event handler for testing
+            document.addEventListener('checkGameActive', (event) => {
+                if (event.detail && typeof event.detail.callback === 'function') {
+                    event.detail.callback(true, 'white');
+                }
+            });
+            
+            // Button event handlers
+            document.getElementById('run-all-tests-btn').addEventListener('click', function() {
+                // Clear the log
+                logElement.innerHTML = '';
+                
+                // Run the tests
+                runLegalMovesTests();
+            });
+            
+            document.getElementById('test-default-legal-moves-btn').addEventListener('click', function() {
+                logElement.innerHTML = '';
+                legalMovesTests.testDefaultLegalMovesAdded();
+            });
+            
+            document.getElementById('test-is-legal-move-btn').addEventListener('click', function() {
+                logElement.innerHTML = '';
+                legalMovesTests.testIsLegalMoveFunction();
+            });
+            
+            document.getElementById('test-highlighting-btn').addEventListener('click', function() {
+                logElement.innerHTML = '';
+                legalMovesTests.testLegalMoveHighlighting();
+            });
+            
+            document.getElementById('test-movement-btn').addEventListener('click', function() {
+                logElement.innerHTML = '';
+                legalMovesTests.testPieceMovement();
+            });
+            
+            document.getElementById('test-board-state-btn').addEventListener('click', function() {
+                logElement.innerHTML = '';
+                legalMovesTests.testBoardStateAfterMove();
+            });
+            
+            document.getElementById('reset-board-btn').addEventListener('click', function() {
+                // Reset the board
+                window.chessboard.updateBoard(initialBoardState, initialLegalMoves);
+                
+                // Clear the log
+                logElement.innerHTML = '';
+                console.log('Board reset to initial state');
+            });
+            
+            // Debug handlers
+            document.getElementById('debug-legal-moves-btn').addEventListener('click', function() {
+                const debugInfo = document.getElementById('debug-info');
+                const chessboard = window.chessboard;
+                
+                debugInfo.innerHTML = '<h4>Legal Moves</h4>';
+                
+                if (!chessboard.legalMoves || chessboard.legalMoves.length === 0) {
+                    debugInfo.innerHTML += '<p>No legal moves found in the chessboard object.</p>';
+                } else {
+                    debugInfo.innerHTML += `<p>Found ${chessboard.legalMoves.length} legal moves:</p>`;
+                    
+                    const list = document.createElement('ul');
+                    chessboard.legalMoves.forEach(move => {
+                        const item = document.createElement('li');
+                        item.textContent = `${move.from} → ${move.to}`;
+                        list.appendChild(item);
+                    });
+                    
+                    debugInfo.appendChild(list);
+                }
+                
+                // Add isLegalMove test for e2-e4
+                const isPawnMoveToE4Legal = chessboard.isLegalMove('e2', 'e4');
+                debugInfo.innerHTML += `<p>Is e2-e4 a legal move? <strong>${isPawnMoveToE4Legal ? 'Yes' : 'No'}</strong></p>`;
+                
+                // Show selected square
+                debugInfo.innerHTML += `<p>Selected square: <strong>${chessboard.selectedSquare || 'None'}</strong></p>`;
+                
+                console.info('Debug information updated');
+            });
+            
+            document.getElementById('debug-e2e4-btn').addEventListener('click', function() {
+                const chessboard = window.chessboard;
+                
+                console.info('Testing e2-e4 move specifically...');
+                
+                // Make sure no square is selected
+                chessboard.deselectSquare();
+                
+                // 1. Select e2
+                console.info('Step 1: Selecting e2');
+                chessboard.handleSquareClick('e2');
+                
+                // 2. Check if e2 is selected
+                console.info(`Is e2 selected? ${chessboard.selectedSquare === 'e2' ? 'Yes' : 'No'}`);
+                
+                // 3. Check if e4 is highlighted
+                const e4Square = document.getElementById('e4');
+                console.info(`Is e4 highlighted? ${e4Square.classList.contains('highlight') ? 'Yes' : 'No'}`);
+                
+                // 4. Try to move to e4
+                console.info('Step 2: Clicking e4');
+                chessboard.handleSquareClick('e4');
+                
+                // 5. Check the result
+                setTimeout(() => {
+                    const pieceAtE4 = document.getElementById('e4').querySelector('.piece');
+                    console.info(`Is there a piece at e4? ${pieceAtE4 ? 'Yes' : 'No'}`);
+                    
+                    if (pieceAtE4) {
+                        const imgAtE4 = pieceAtE4.querySelector('img');
+                        console.info(`Piece at e4: ${imgAtE4 ? imgAtE4.src : 'No image found'}`);
+                    }
+                }, 100);
+            });
+            
+            document.getElementById('fix-legal-moves-btn').addEventListener('click', function() {
+                const chessboard = window.chessboard;
+                
+                console.info('Manually fixing legal moves...');
+                
+                // Add the e2-e4 move if it doesn't exist
+                const hasE2E4Move = chessboard.legalMoves.some(move => move.from === 'e2' && move.to === 'e4');
+                
+                if (!hasE2E4Move) {
+                    console.info('Adding e2-e4 to legal moves');
+                    chessboard.legalMoves.push({ from: 'e2', to: 'e4' });
+                }
+                
+                // Add all typical pawn moves
+                const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+                
+                files.forEach(file => {
+                    const oneMoveSquare = `${file}3`;
+                    const twoMoveSquare = `${file}4`;
+                    const fromSquare = `${file}2`;
+                    
+                    // Check if moves already exist
+                    const hasOneSquareMove = chessboard.legalMoves.some(move => move.from === fromSquare && move.to === oneMoveSquare);
+                    const hasTwoSquareMove = chessboard.legalMoves.some(move => move.from === fromSquare && move.to === twoMoveSquare);
+                    
+                    if (!hasOneSquareMove) {
+                        console.info(`Adding ${fromSquare}-${oneMoveSquare} to legal moves`);
+                        chessboard.legalMoves.push({ from: fromSquare, to: oneMoveSquare });
+                    }
+                    
+                    if (!hasTwoSquareMove) {
+                        console.info(`Adding ${fromSquare}-${twoMoveSquare} to legal moves`);
+                        chessboard.legalMoves.push({ from: fromSquare, to: twoMoveSquare });
+                    }
+                });
+                
+                // Add knight moves
+                const knightMoves = [
+                    { from: 'b1', to: 'a3' },
+                    { from: 'b1', to: 'c3' },
+                    { from: 'g1', to: 'f3' },
+                    { from: 'g1', to: 'h3' }
+                ];
+                
+                knightMoves.forEach(move => {
+                    const hasMoveAlready = chessboard.legalMoves.some(m => m.from === move.from && m.to === move.to);
+                    
+                    if (!hasMoveAlready) {
+                        console.info(`Adding ${move.from}-${move.to} to legal moves`);
+                        chessboard.legalMoves.push(move);
+                    }
+                });
+                
+                console.info(`Legal moves now contains ${chessboard.legalMoves.length} moves`);
+                console.info('Try selecting a piece now to see if legal moves are highlighted properly');
+            });
+        });
+    </script>
+</body>
+</html> 

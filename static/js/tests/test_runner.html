@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Engine Test Suite</title>
+    
+    <link rel="stylesheet" href="/static/css/chessboard.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .test-container {
+            display: flex;
+            flex-direction: row;
+            margin-top: 20px;
+        }
+        
+        .board-container {
+            flex: 1;
+        }
+        
+        .output-container {
+            flex: 1;
+            margin-left: 20px;
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        
+        .info {
+            color: #0066cc;
+        }
+        
+        #test-output {
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        
+        .test-button {
+            background-color: #2196F3;
+        }
+        
+        .reset-button {
+            background-color: #f44336;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ccc;
+        }
+        
+        .tab {
+            padding: 10px 15px;
+            margin-right: 5px;
+            cursor: pointer;
+            border: 1px solid #ccc;
+            border-bottom: none;
+            border-radius: 4px 4px 0 0;
+            background-color: #f0f0f0;
+        }
+        
+        .tab.active {
+            background-color: white;
+            border-bottom: 1px solid white;
+            margin-bottom: -1px;
+            font-weight: bold;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chess Engine Test Suite</h1>
+    <p>Comprehensive test suite for the Chess Engine implementation.</p>
+    
+    <div class="tabs">
+        <div class="tab active" data-tab="general-tests">General Tests</div>
+        <div class="tab" data-tab="legal-moves-tests">Legal Moves Tests</div>
+        <div class="tab" data-tab="piece-movement-tests">Piece Movement Tests</div>
+    </div>
+    
+    <div class="tab-content active" id="general-tests">
+        <div class="controls">
+            <button id="run-tests-button" class="test-button">Run All Tests</button>
+            <button id="reset-button" class="reset-button">Reset Board</button>
+        </div>
+        
+        <div class="test-container">
+            <div class="board-container">
+                <div id="chessboard"></div>
+                <!-- Other game UI elements -->
+                <div id="game-status"></div>
+                <div id="move-history"></div>
+                <div id="loading-overlay" style="display: none;"></div>
+                <div id="loading-message" style="display: none;"></div>
+                <div id="notification" style="display: none;"></div>
+            </div>
+            
+            <div class="output-container">
+                <h3>Test Output</h3>
+                <div id="test-output"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="legal-moves-tests">
+        <p>Tests focusing specifically on legal move detection and highlighting.</p>
+        <div class="controls">
+            <button id="run-legal-moves-tests" class="test-button">Run Legal Move Tests</button>
+            <button id="test-e2e4" class="test-button">Test e2-e4 Move</button>
+            <button id="test-knights" class="test-button">Test Knight Moves</button>
+        </div>
+        
+        <div class="test-container">
+            <div class="board-container">
+                <div id="legal-moves-board"></div>
+            </div>
+            
+            <div class="output-container">
+                <h3>Test Output</h3>
+                <div id="legal-moves-output"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="piece-movement-tests">
+        <p>Tests focusing on piece movement and board updates.</p>
+        <div class="controls">
+            <button id="run-movement-tests" class="test-button">Run Movement Tests</button>
+            <button id="test-pawn-moves" class="test-button">Test Pawn Moves</button>
+            <button id="test-piece-capture" class="test-button">Test Captures</button>
+        </div>
+        
+        <div class="test-container">
+            <div class="board-container">
+                <div id="movement-board"></div>
+            </div>
+            
+            <div class="output-container">
+                <h3>Test Output</h3>
+                <div id="movement-output"></div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Replace console.log for the test output -->
+    <script>
+        // Override console methods to also output to our test output element
+        const outputElement = document.getElementById('test-output');
+        
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleInfo = console.info;
+        
+        console.log = function() {
+            const args = Array.from(arguments);
+            const message = args.join(' ');
+            
+            // Still log to the browser console
+            originalConsoleLog.apply(console, args);
+            
+            // Add to our output element
+            if (outputElement) {
+                const logLine = document.createElement('div');
+                logLine.textContent = message;
+                
+                if (message.includes('✅ PASS')) {
+                    logLine.className = 'success';
+                }
+                
+                outputElement.appendChild(logLine);
+                outputElement.scrollTop = outputElement.scrollHeight;
+            }
+        };
+        
+        console.error = function() {
+            const args = Array.from(arguments);
+            const message = args.join(' ');
+            
+            // Still log to the browser console
+            originalConsoleError.apply(console, args);
+            
+            // Add to our output element with error styling
+            if (outputElement) {
+                const logLine = document.createElement('div');
+                logLine.textContent = message;
+                logLine.className = 'error';
+                
+                outputElement.appendChild(logLine);
+                outputElement.scrollTop = outputElement.scrollHeight;
+            }
+        };
+        
+        console.info = function() {
+            const args = Array.from(arguments);
+            const message = args.join(' ');
+            
+            // Still log to the browser console
+            originalConsoleInfo.apply(console, args);
+            
+            // Add to our output element
+            if (outputElement) {
+                const logLine = document.createElement('div');
+                logLine.textContent = message;
+                logLine.className = 'info';
+                
+                outputElement.appendChild(logLine);
+                outputElement.scrollTop = outputElement.scrollHeight;
+            }
+        };
+        
+        // Tab switching functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    // Remove active class from all tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    
+                    // Add active class to clicked tab
+                    this.classList.add('active');
+                    
+                    // Hide all tab content
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // Show the content for the clicked tab
+                    const tabId = this.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        });
+    </script>
+    
+    <!-- Load JS in the right order -->
+    <script src="/static/js/chessboard.js"></script>
+    <script src="/static/js/game.js"></script>
+    <script src="/static/js/tests/run_tests.js"></script>
+    <script src="/static/js/tests/legal_moves_test.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up initial board state with legal moves for testing
+            const initialBoardState = {
+                // White pieces
+                'a1': { type: 'r', color: 'white', code: 'R' },
+                'b1': { type: 'n', color: 'white', code: 'N' },
+                'c1': { type: 'b', color: 'white', code: 'B' },
+                'd1': { type: 'q', color: 'white', code: 'Q' },
+                'e1': { type: 'k', color: 'white', code: 'K' },
+                'f1': { type: 'b', color: 'white', code: 'B' },
+                'g1': { type: 'n', color: 'white', code: 'N' },
+                'h1': { type: 'r', color: 'white', code: 'R' },
+                'a2': { type: 'p', color: 'white', code: 'P' },
+                'b2': { type: 'p', color: 'white', code: 'P' },
+                'c2': { type: 'p', color: 'white', code: 'P' },
+                'd2': { type: 'p', color: 'white', code: 'P' },
+                'e2': { type: 'p', color: 'white', code: 'P' },
+                'f2': { type: 'p', color: 'white', code: 'P' },
+                'g2': { type: 'p', color: 'white', code: 'P' },
+                'h2': { type: 'p', color: 'white', code: 'P' },
+                
+                // Black pieces
+                'a8': { type: 'r', color: 'black', code: 'r' },
+                'b8': { type: 'n', color: 'black', code: 'n' },
+                'c8': { type: 'b', color: 'black', code: 'b' },
+                'd8': { type: 'q', color: 'black', code: 'q' },
+                'e8': { type: 'k', color: 'black', code: 'k' },
+                'f8': { type: 'b', color: 'black', code: 'b' },
+                'g8': { type: 'n', color: 'black', code: 'n' },
+                'h8': { type: 'r', color: 'black', code: 'r' },
+                'a7': { type: 'p', color: 'black', code: 'p' },
+                'b7': { type: 'p', color: 'black', code: 'p' },
+                'c7': { type: 'p', color: 'black', code: 'p' },
+                'd7': { type: 'p', color: 'black', code: 'p' },
+                'e7': { type: 'p', color: 'black', code: 'p' },
+                'f7': { type: 'p', color: 'black', code: 'p' },
+                'g7': { type: 'p', color: 'black', code: 'p' },
+                'h7': { type: 'p', color: 'black', code: 'p' }
+            };
+            
+            // Initial legal moves for white (pawn and knight moves)
+            const initialLegalMoves = [
+                { from: 'a2', to: 'a3' },
+                { from: 'a2', to: 'a4' },
+                { from: 'b2', to: 'b3' },
+                { from: 'b2', to: 'b4' },
+                { from: 'c2', to: 'c3' },
+                { from: 'c2', to: 'c4' },
+                { from: 'd2', to: 'd3' },
+                { from: 'd2', to: 'd4' },
+                { from: 'e2', to: 'e3' },
+                { from: 'e2', to: 'e4' },
+                { from: 'f2', to: 'f3' },
+                { from: 'f2', to: 'f4' },
+                { from: 'g2', to: 'g3' },
+                { from: 'g2', to: 'g4' },
+                { from: 'h2', to: 'h3' },
+                { from: 'h2', to: 'h4' },
+                { from: 'b1', to: 'a3' },
+                { from: 'b1', to: 'c3' },
+                { from: 'g1', to: 'f3' },
+                { from: 'g1', to: 'h3' }
+            ];
+            
+            // Initialize the main chessboard
+            window.chessboard = new ChessBoard();
+            window.chessboard.updateBoard(initialBoardState, initialLegalMoves);
+            
+            // Setup game active event handler for testing
+            document.addEventListener('checkGameActive', (event) => {
+                if (event.detail && typeof event.detail.callback === 'function') {
+                    event.detail.callback(true, 'white');
+                }
+            });
+            
+            // Button event handlers
+            document.getElementById('run-tests-button').addEventListener('click', function() {
+                // Clear the log
+                outputElement.innerHTML = '';
+                
+                // Run the tests
+                TestSuite.runAll();
+            });
+            
+            document.getElementById('reset-button').addEventListener('click', function() {
+                // Reset the board
+                window.chessboard.updateBoard(initialBoardState, initialLegalMoves);
+                
+                // Clear the log
+                outputElement.innerHTML = '';
+                console.log('Board reset to initial state');
+            });
+            
+            // Legal moves testing specific functionality
+            document.getElementById('test-e2e4').addEventListener('click', function() {
+                outputElement.innerHTML = '';
+                console.info('Testing e2-e4 move specifically...');
+                
+                // Deselect any existing selection
+                window.chessboard.deselectSquare();
+                
+                // Select e2
+                console.info('Step 1: Selecting e2');
+                window.chessboard.selectSquare('e2');
+                
+                // Check if e2 is selected
+                console.info(`Is e2 selected? ${window.chessboard.selectedSquare === 'e2' ? 'Yes' : 'No'}`);
+                
+                // Check if e4 is highlighted
+                const e4Square = document.getElementById('e4');
+                console.info(`Is e4 highlighted? ${e4Square.classList.contains('highlight') ? 'Yes' : 'No'}`);
+                
+                if (e4Square.classList.contains('highlight')) {
+                    // Try moving to e4
+                    console.info('Step 2: Moving to e4');
+                    window.chessboard.handleSquareClick('e4');
+                    
+                    // Set a timeout to check the result after the async operation completes
+                    setTimeout(() => {
+                        const pieceAtE4 = document.getElementById('e4').querySelector('.piece');
+                        if (pieceAtE4) {
+                            console.info('Success: Piece moved to e4');
+                        } else {
+                            console.error('Failed: No piece at e4 after move');
+                        }
+                    }, 100);
+                } else {
+                    console.error('e4 is not highlighted as a legal move');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

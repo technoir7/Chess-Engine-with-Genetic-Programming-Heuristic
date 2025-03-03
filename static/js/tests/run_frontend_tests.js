@@ -1,10 +1,10 @@
 /**
- * Frontend test script to verify rendering fixes
- * Run this in the browser console to test the chessboard rendering
+ * Frontend test script to verify rendering fixes and piece movement
+ * Run this in the browser console to test the chessboard rendering and movement
  */
 
 function runFrontendTests() {
-    console.log('Running frontend tests for chessboard rendering...');
+    console.log('Running frontend tests for chessboard rendering and movement...');
     
     // Test 1: Verify all 32 pieces are present
     const test1 = function() {
@@ -103,10 +103,131 @@ function runFrontendTests() {
         }
     };
     
+    // Test 4: Test piece selection functionality
+    const test4 = function() {
+        console.log('Test 4: Testing piece selection functionality...');
+        
+        try {
+            // Check if the game is ready and has the chessboard
+            const chessboard = window.chessboard;
+            if (!chessboard) {
+                console.error('❌ FAIL: ChessBoard instance not found on window');
+                return;
+            }
+            
+            // Clear any existing selection
+            chessboard.deselectSquare();
+            
+            // Try to click on a white piece (e2 pawn)
+            const e2Square = document.getElementById('e2');
+            if (!e2Square) {
+                console.error('❌ FAIL: Square e2 not found');
+                return;
+            }
+            
+            // Set up a game state event handler temporarily
+            const originalEventListener = document.addEventListener;
+            document.addEventListener = function(event, handler) {
+                if (event === 'checkGameActive') {
+                    // Immediately call the callback with active game and white's turn
+                    handler.detail.callback(true, 'white');
+                } else {
+                    // Call the original addEventListener for other events
+                    originalEventListener.call(document, event, handler);
+                }
+            };
+            
+            // Simulate click
+            e2Square.click();
+            
+            // Restore original event listener
+            document.addEventListener = originalEventListener;
+            
+            // Check if the piece was selected
+            if (chessboard.selectedSquare !== 'e2') {
+                console.error('❌ FAIL: Piece at e2 was not selected when clicked');
+            } else if (!e2Square.classList.contains('selected')) {
+                console.error('❌ FAIL: Square e2 does not have the "selected" class');
+            } else {
+                console.log('✅ PASS: Piece selection works correctly');
+            }
+            
+            // Clean up
+            chessboard.deselectSquare();
+        } catch (error) {
+            console.error('❌ FAIL: Error during piece selection test:', error);
+        }
+    };
+    
+    // Test 5: Test move highlighting
+    const test5 = function() {
+        console.log('Test 5: Testing move highlighting...');
+        
+        try {
+            // Get the chessboard instance
+            const chessboard = window.chessboard;
+            if (!chessboard) {
+                console.error('❌ FAIL: ChessBoard instance not found on window');
+                return;
+            }
+            
+            // Add a legal move from e2 to e4
+            chessboard.legalMoves = [
+                { from: 'e2', to: 'e3' },
+                { from: 'e2', to: 'e4' }
+            ];
+            
+            // Clear any existing selection
+            chessboard.deselectSquare();
+            
+            // Set up a game state event handler temporarily
+            const originalEventListener = document.addEventListener;
+            document.addEventListener = function(event, handler) {
+                if (event === 'checkGameActive') {
+                    // Immediately call the callback with active game and white's turn
+                    handler.detail.callback(true, 'white');
+                } else {
+                    // Call the original addEventListener for other events
+                    originalEventListener.call(document, event, handler);
+                }
+            };
+            
+            // Select the e2 pawn
+            const e2Square = document.getElementById('e2');
+            e2Square.click();
+            
+            // Restore original event listener
+            document.addEventListener = originalEventListener;
+            
+            // Check if the legal moves are highlighted
+            const e3Square = document.getElementById('e3');
+            const e4Square = document.getElementById('e4');
+            
+            if (!e3Square.classList.contains('highlight')) {
+                console.error('❌ FAIL: Legal move to e3 is not highlighted');
+            } else if (!e4Square.classList.contains('highlight')) {
+                console.error('❌ FAIL: Legal move to e4 is not highlighted');
+            } else {
+                console.log('✅ PASS: Legal move highlighting works correctly');
+            }
+            
+            // Clean up
+            chessboard.deselectSquare();
+        } catch (error) {
+            console.error('❌ FAIL: Error during move highlighting test:', error);
+        }
+    };
+    
     // Run all tests
     test1();
+    console.log('------------');
     test2();
+    console.log('------------');
     test3();
+    console.log('------------');
+    test4();
+    console.log('------------');
+    test5();
     
     console.log('Frontend tests completed!');
 }
