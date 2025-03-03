@@ -9,7 +9,10 @@
       "python start.py",
       "python run.py",
       "python -m unittest",
-      "python -m vitest"
+      "python -m vitest",
+      "python",
+      "source *",
+      "source venv/bin/activate"
     ]
   },
   "version": "1.0.0"

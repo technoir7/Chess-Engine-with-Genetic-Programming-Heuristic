@@ -179,6 +179,43 @@ def make_move():
             'currentPlayer': current_player
         })
     
+    # Make sure AI doesn't try to move to the same square the player just moved to
+    # This helps prevent conflicts where the AI might capture a piece the player just moved
+    max_attempts = 10
+    attempt = 0
+    
+    # Keep generating moves until we find one that doesn't use the player's target square
+    # or until we hit the maximum number of attempts
+    while attempt < max_attempts:
+        ai_from_square = coord_to_square(ai_move[0])
+        ai_to_square = coord_to_square(ai_move[1])
+        
+        if ai_to_square != to_square:
+            # The AI isn't trying to move to the player's destination square
+            break
+            
+        # Try to find another valid move for the AI
+        attempt += 1
+        
+        # If this is our last attempt, just use whatever move the AI gave us
+        if attempt >= max_attempts:
+            break
+            
+        # Otherwise, search again for a different move
+        ai_move, score = searcher.search(current_position, secs=0.5)
+        
+        # If no valid moves, break the loop
+        if ai_move is None:
+            return jsonify({
+                'valid': True,
+                'gameState': 'ended',
+                'winner': 'player',
+                'message': 'AI has no valid moves. You won!',
+                'board': board_to_dict(current_position),
+                'moves': format_moves_for_frontend(move_history),
+                'currentPlayer': current_player
+            })
+    
     # Make AI move
     current_position = current_position.move(ai_move)
     

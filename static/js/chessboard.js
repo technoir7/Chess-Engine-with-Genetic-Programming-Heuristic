@@ -98,7 +98,7 @@ class ChessBoard {
                 this.deselectSquare();
                 this.selectSquare(squareId);
             } else {
-                // Otherwise, just deselect
+                // If clicked on an empty square or opponent's piece (not a legal move)
                 this.deselectSquare();
             }
         }
@@ -156,46 +156,19 @@ class ChessBoard {
     }
 
     /**
-     * Make a move on the board
-     * @param {string} from - Starting square ID
-     * @param {string} to - Target square ID
+     * Make a move on the chessboard
+     * @param {string} from - Starting square (e.g., 'e2')
+     * @param {string} to - Target square (e.g., 'e4')
      */
     makeMove(from, to) {
         // Store the move for highlighting
         this.lastMove = { from, to };
         
-        // Send the move to the backend
-        fetch('/move', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                from: from,
-                to: to
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                console.error('Move error:', data.error);
-                // Revert the move if it was invalid
-                this.updateBoard(this.boardState);
-            } else {
-                // Update the board with the new state
-                this.updateBoard(data.board);
-                // Highlight the last move
-                this.highlightLastMove();
-            }
-        })
-        .catch(error => {
-            console.error('Error making move:', error);
-            // Revert the move on error
-            this.updateBoard(this.boardState);
-        });
-        
         // Deselect the current square
         this.deselectSquare();
+        
+        // Note: The actual board update will happen when game.js receives
+        // the server response and calls updateBoard with the new state
     }
 
     /**
