@@ -161,12 +161,38 @@ class ChessBoard {
      * @param {string} to - Target square ID
      */
     makeMove(from, to) {
-        // This function will be called by the game controller
-        // but we'll implement the visual part here
+        // Store the move for highlighting
         this.lastMove = { from, to };
         
-        // Highlight the last move
-        this.highlightLastMove();
+        // Send the move to the backend
+        fetch('/move', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                from: from,
+                to: to
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Move error:', data.error);
+                // Revert the move if it was invalid
+                this.updateBoard(this.boardState);
+            } else {
+                // Update the board with the new state
+                this.updateBoard(data.board);
+                // Highlight the last move
+                this.highlightLastMove();
+            }
+        })
+        .catch(error => {
+            console.error('Error making move:', error);
+            // Revert the move on error
+            this.updateBoard(this.boardState);
+        });
         
         // Deselect the current square
         this.deselectSquare();
@@ -176,12 +202,12 @@ class ChessBoard {
      * Highlight the last move
      */
     highlightLastMove() {
-        // Clear previous last move highlights
-        document.querySelectorAll('.last-move').forEach(element => {
-            element.classList.remove('last-move');
+        // Clear previous highlights
+        document.querySelectorAll('.last-move').forEach(square => {
+            square.classList.remove('last-move');
         });
         
-        // Add highlight to new last move
+        // Add highlights to the squares involved in the last move
         if (this.lastMove) {
             this.squares[this.lastMove.from].classList.add('last-move');
             this.squares[this.lastMove.to].classList.add('last-move');

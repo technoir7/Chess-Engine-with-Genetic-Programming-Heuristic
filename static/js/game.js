@@ -173,8 +173,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function generateLegalMoves(boardState) {
-        // Generate pseudo-legal moves to allow piece selection and movement
-        // The backend will validate if the move is actually legal
         const legalMoves = [];
         
         // For each piece on the board that belongs to the player (white)
@@ -186,13 +184,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Add pseudo-legal moves based on piece type
                 switch (pieceType) {
                     case 'p': // Pawn
-                        // Pawns can move forward 1 square (or 2 from starting position)
-                        // and capture diagonally
+                        // Forward moves
                         const forwardSquare = `${file}${rank + 1}`;
                         if (!boardState[forwardSquare]) {
                             legalMoves.push({ from: squareId, to: forwardSquare });
                             
-                            // If pawn is at starting position, it can move 2 squares
+                            // Initial two-square move
                             if (rank === 2) {
                                 const doubleForwardSquare = `${file}${rank + 2}`;
                                 if (!boardState[doubleForwardSquare]) {
@@ -201,33 +198,119 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                         
-                        // Diagonal captures
-                        ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].forEach(f => {
-                            if (Math.abs(f.charCodeAt(0) - file.charCodeAt(0)) === 1) {
-                                const captureSquare = `${f}${rank + 1}`;
+                        // Captures
+                        const fileCode = file.charCodeAt(0);
+                        for (const captureFile of [fileCode - 1, fileCode + 1]) {
+                            if (captureFile >= 97 && captureFile <= 104) {
+                                const captureSquare = `${String.fromCharCode(captureFile)}${rank + 1}`;
                                 if (boardState[captureSquare] && boardState[captureSquare].color === 'black') {
                                     legalMoves.push({ from: squareId, to: captureSquare });
                                 }
                             }
-                        });
+                        }
                         break;
                         
-                    // For other pieces, just use the simple approach of allowing moves to any square
-                    // The backend will validate
-                    default:
-                        for (let toFile = 'a'; toFile <= 'h'; toFile = String.fromCharCode(toFile.charCodeAt(0) + 1)) {
-                            for (let toRank = 1; toRank <= 8; toRank++) {
-                                const targetSquare = `${toFile}${toRank}`;
-                                // Don't allow moving to the same square or capturing own pieces
-                                if (targetSquare !== squareId && 
-                                    (!boardState[targetSquare] || boardState[targetSquare].color !== 'white')) {
-                                    legalMoves.push({
-                                        from: squareId,
-                                        to: targetSquare
-                                    });
+                    case 'r': // Rook
+                        // Horizontal and vertical moves
+                        const rookDirs = [[0, 1], [1, 0], [0, -1], [-1, 0]];
+                        for (const [dx, dy] of rookDirs) {
+                            for (let i = 1; i <= 7; i++) {
+                                const newFile = String.fromCharCode(file.charCodeAt(0) + dx * i);
+                                const newRank = rank + dy * i;
+                                if (newFile < 'a' || newFile > 'h' || newRank < 1 || newRank > 8) break;
+                                
+                                const newSquare = `${newFile}${newRank}`;
+                                if (!boardState[newSquare]) {
+                                    legalMoves.push({ from: squareId, to: newSquare });
+                                } else {
+                                    if (boardState[newSquare].color === 'black') {
+                                        legalMoves.push({ from: squareId, to: newSquare });
+                                    }
+                                    break;
                                 }
                             }
                         }
+                        break;
+                        
+                    case 'n': // Knight
+                        const knightMoves = [
+                            [-2, -1], [-2, 1], [-1, -2], [-1, 2],
+                            [1, -2], [1, 2], [2, -1], [2, 1]
+                        ];
+                        for (const [dx, dy] of knightMoves) {
+                            const newFile = String.fromCharCode(file.charCodeAt(0) + dx);
+                            const newRank = rank + dy;
+                            if (newFile >= 'a' && newFile <= 'h' && newRank >= 1 && newRank <= 8) {
+                                const newSquare = `${newFile}${newRank}`;
+                                if (!boardState[newSquare] || boardState[newSquare].color === 'black') {
+                                    legalMoves.push({ from: squareId, to: newSquare });
+                                }
+                            }
+                        }
+                        break;
+                        
+                    case 'b': // Bishop
+                        const bishopDirs = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+                        for (const [dx, dy] of bishopDirs) {
+                            for (let i = 1; i <= 7; i++) {
+                                const newFile = String.fromCharCode(file.charCodeAt(0) + dx * i);
+                                const newRank = rank + dy * i;
+                                if (newFile < 'a' || newFile > 'h' || newRank < 1 || newRank > 8) break;
+                                
+                                const newSquare = `${newFile}${newRank}`;
+                                if (!boardState[newSquare]) {
+                                    legalMoves.push({ from: squareId, to: newSquare });
+                                } else {
+                                    if (boardState[newSquare].color === 'black') {
+                                        legalMoves.push({ from: squareId, to: newSquare });
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                        
+                    case 'q': // Queen (combines rook and bishop moves)
+                        const queenDirs = [
+                            [0, 1], [1, 0], [0, -1], [-1, 0],
+                            [1, 1], [1, -1], [-1, 1], [-1, -1]
+                        ];
+                        for (const [dx, dy] of queenDirs) {
+                            for (let i = 1; i <= 7; i++) {
+                                const newFile = String.fromCharCode(file.charCodeAt(0) + dx * i);
+                                const newRank = rank + dy * i;
+                                if (newFile < 'a' || newFile > 'h' || newRank < 1 || newRank > 8) break;
+                                
+                                const newSquare = `${newFile}${newRank}`;
+                                if (!boardState[newSquare]) {
+                                    legalMoves.push({ from: squareId, to: newSquare });
+                                } else {
+                                    if (boardState[newSquare].color === 'black') {
+                                        legalMoves.push({ from: squareId, to: newSquare });
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                        
+                    case 'k': // King
+                        const kingMoves = [
+                            [-1, -1], [-1, 0], [-1, 1],
+                            [0, -1], [0, 1],
+                            [1, -1], [1, 0], [1, 1]
+                        ];
+                        for (const [dx, dy] of kingMoves) {
+                            const newFile = String.fromCharCode(file.charCodeAt(0) + dx);
+                            const newRank = rank + dy;
+                            if (newFile >= 'a' && newFile <= 'h' && newRank >= 1 && newRank <= 8) {
+                                const newSquare = `${newFile}${newRank}`;
+                                if (!boardState[newSquare] || boardState[newSquare].color === 'black') {
+                                    legalMoves.push({ from: squareId, to: newSquare });
+                                }
+                            }
+                        }
+                        break;
                 }
             }
         }
