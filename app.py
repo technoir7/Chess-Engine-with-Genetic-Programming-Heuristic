@@ -106,6 +106,42 @@ def is_stalemate(position, side='white'):
     
     return False  # Has moves, so not stalemate
 
+def check_game_result():
+    """
+    Check if the game has ended due to checkmate, stalemate, or other conditions.
+    
+    Returns:
+        str or None: A string describing the result if the game has ended, or None if it's still ongoing.
+    """
+    global current_position, current_player
+    
+    if not current_position:
+        return None
+    
+    # Check for checkmate
+    if is_checkmate(current_position, current_player):
+        winner = 'black' if current_player == 'white' else 'white'
+        return f"Checkmate! {winner.capitalize()} wins"
+    
+    # Check for stalemate
+    if is_stalemate(current_position, current_player):
+        return "Stalemate! The game is a draw"
+    
+    # Check for insufficient material (simplified check)
+    # This is a basic implementation - you would need a more complete check for tournament rules
+    piece_count = {}
+    for char in current_position.board:
+        if char not in ['.', ' ', '\n']:
+            if char not in piece_count:
+                piece_count[char] = 0
+            piece_count[char] += 1
+    
+    # If only kings are left, it's a draw
+    if sum(piece_count.values()) <= 2:
+        return "Draw due to insufficient material"
+    
+    return None
+
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
@@ -211,10 +247,10 @@ def make_move():
     global current_position, current_player, move_history
     
     if not current_position or not heuristic or not searcher:
-        return jsonify({'error': 'Game not initialized'}), 400
+        return jsonify({'error': 'Game not initialized', 'valid': False}), 400
     
     if current_player != 'white':
-        return jsonify({'error': 'Not your turn'}), 400
+        return jsonify({'error': 'Not your turn', 'valid': False}), 400
     
     # Get move details from request
     data = request.get_json()
@@ -222,7 +258,7 @@ def make_move():
     to_square = data.get('to')
     
     if not from_square or not to_square:
-        return jsonify({'error': 'Missing from or to square'}), 400
+        return jsonify({'error': 'Missing from or to square', 'valid': False}), 400
     
     try:
         # Convert algebraic notation to array indices
@@ -234,11 +270,20 @@ def make_move():
         move = (from_coord, to_coord)
         
         if move not in valid_moves:
-            return jsonify({'error': 'Invalid move'}), 400
+            return jsonify({'error': 'Invalid move', 'valid': False}), 400
         
         # Execute the player's move
         new_position = current_position.move(move)
+        current_position = new_position  # Update the global position
         current_player = 'black'
+        
+        # Add the move to history
+        move_history.append({
+            'from': from_square,
+            'to': to_square,
+            'player': 'white',
+            'piece': current_position.board[to_coord].lower()
+        })
         
         # Check for game end conditions after player's move
         game_result = check_game_result()
@@ -250,63 +295,92 @@ def make_move():
                 board_dict = _ensure_complete_board(board_dict)
             
             return jsonify({
+                'valid': True,
                 'board': board_dict,
                 'gameResult': game_result,
                 'legalMoves': [],
                 'lastMove': {'from': from_square, 'to': to_square},
-                'check': is_king_in_check(new_position)
+                'check': is_king_in_check(new_position),
+                'moves': move_history
             })
         
         # Make AI move
-        ai_position, ai_move = searcher.search(new_position, secs=1.5)
+        search_result = searcher.search(new_position, secs=1.5)
+        
+        # The search result is a tuple (move, score) where move is itself a tuple (from_coord, to_coord)
+        if isinstance(search_result, tuple) and len(search_result) == 2:
+            ai_move, ai_score = search_result
+        else:
+            ai_move = search_result
         
         if ai_move:
+            # Handle case where ai_move is a tuple (from_coord, to_coord)
+            if isinstance(ai_move, tuple) and len(ai_move) == 2:
+                ai_from_coord, ai_to_coord = ai_move
+            else:
+                # If for some reason ai_move is not in the expected format, log and return
+                print(f"Unexpected AI move format: {ai_move}")
+                return jsonify({'error': 'Invalid AI move format', 'valid': False}), 500
+                
             # Update position with AI's move
-            new_position = ai_position
+            current_position = current_position.move(ai_move)
             current_player = 'white'
             
             # Calculate the move in algebraic notation for frontend
-            ai_from_square = coord_to_square(ai_move[0])
-            ai_to_square = coord_to_square(ai_move[1])
+            ai_from_square = coord_to_square(ai_from_coord)
+            ai_to_square = coord_to_square(ai_to_coord)
+            
+            # Add AI move to history
+            move_history.append({
+                'from': ai_from_square,
+                'to': ai_to_square,
+                'player': 'black',
+                'piece': current_position.board[ai_move[1]].lower()
+            })
             
             # Check for game end conditions after AI's move
             game_result = check_game_result()
             
             # Get legal moves for the player
-            legal_moves = format_moves_for_frontend(new_position.gen_moves())
+            legal_moves = format_moves_for_frontend(current_position.gen_moves())
             
             # Convert the board to dictionary for the frontend
-            board_dict = board_to_dict(new_position)
+            board_dict = board_to_dict(current_position)
             # Ensure the board is complete
             if len(board_dict) < 32:
                 board_dict = _ensure_complete_board(board_dict)
             
             return jsonify({
+                'valid': True,
                 'board': board_dict,
                 'legalMoves': legal_moves,
                 'lastMove': {'from': ai_from_square, 'to': ai_to_square},
                 'gameResult': game_result,
-                'check': is_king_in_check(new_position)
+                'check': is_king_in_check(current_position),
+                'moves': move_history,
+                'aiMove': {'from': ai_from_square, 'to': ai_to_square}
             })
         else:
             # AI has no valid moves but is not in checkmate or stalemate
             current_player = 'white'
             
             # Get legal moves for the player
-            legal_moves = format_moves_for_frontend(new_position.gen_moves())
+            legal_moves = format_moves_for_frontend(current_position.gen_moves())
             
             # Convert the board to dictionary for the frontend
-            board_dict = board_to_dict(new_position)
+            board_dict = board_to_dict(current_position)
             # Ensure the board is complete
             if len(board_dict) < 32:
                 board_dict = _ensure_complete_board(board_dict)
             
             return jsonify({
+                'valid': True,
                 'board': board_dict,
                 'legalMoves': legal_moves,
                 'lastMove': {'from': from_square, 'to': to_square},
                 'gameResult': 'AI could not move',
-                'check': is_king_in_check(new_position)
+                'check': is_king_in_check(current_position),
+                'moves': move_history
             })
     except Exception as e:
         # Log the error with stack trace
@@ -314,7 +388,7 @@ def make_move():
         print(f"Error processing move: {e}")
         traceback.print_exc()
         
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': str(e), 'valid': False}), 500
 
 def _ensure_complete_board(board_dict):
     """
@@ -338,6 +412,40 @@ def _ensure_complete_board(board_dict):
     return board_dict
 
 def format_moves_for_frontend(moves):
+    """
+    Format generated moves from the chess engine for the frontend.
+    
+    Args:
+        moves: An iterable of tuples representing moves, where each tuple
+              is (from_coord, to_coord) in the internal board representation.
+        
+    Returns:
+        A list of dictionaries with 'from' and 'to' keys, containing algebraic notation.
+    """
+    if not moves:
+        return []
+    
+    formatted_moves = []
+    
+    for from_coord, to_coord in moves:
+        try:
+            # Convert internal coordinates to algebraic notation
+            from_square = coord_to_square(from_coord)
+            to_square = coord_to_square(to_coord)
+            
+            # Add to formatted moves
+            formatted_moves.append({
+                'from': from_square,
+                'to': to_square
+            })
+        except ValueError as e:
+            # Skip any coordinates that can't be converted
+            print(f"Warning: Skipping invalid move: {e}")
+    
+    return formatted_moves
+
+# Original function renamed to validate_moves_for_frontend
+def validate_moves_for_frontend(moves):
     """
     Format moves for the frontend, ensuring they are all valid.
     
@@ -452,39 +560,41 @@ def board_to_dict(position, include_code=True, use_full_words=False):
         if (position.board[i] == ' ' or  # Empty square
             position.board[i] == '.' or  # Empty square within the 8x8 board
             position.board[i] == '\n' or  # Newline character
-            i < 20 or i >= 100 or  # Outside the 8x8 board (top and bottom padding)
+            i < 21 or i > 98 or  # Outside the 8x8 board (top and bottom padding)
             i % 10 == 0 or i % 10 == 9):  # Outside the 8x8 board (left and right padding)
             continue
         
-        # Convert the index to a square name (e.g., 'e4')
-        file_idx = i % 10 - 1  # 0-7, representing a-h
-        rank_idx = 9 - (i // 10)  # 0-7, representing 1-8 (inverted)
-        
-        # Use our coord_to_square function for consistent coordinate handling
-        square = coord_to_square((file_idx, rank_idx))
-        
-        # Get the piece type (e.g., 'p', 'r', 'n', etc.)
-        piece_type = position.board[i].lower()
-        
-        # Determine the piece color
-        # In the Position object, uppercase letters represent WHITE pieces, lowercase represent BLACK
-        # However, we need to reverse this for the standard chess layout:
-        # - Ranks 7-8 (top of board, indices 20-39) should be WHITE pieces
-        # - Ranks 1-2 (bottom of board, indices 80-99) should be BLACK pieces
-        is_white = not position.board[i].isupper()
-        
-        # Create the piece dictionary
-        piece = {
-            'type': piece_name_map[piece_type] if use_full_words else piece_type,
-            'color': 'white' if is_white else 'black'
-        }
-        
-        # Add the piece code if requested
-        if include_code:
-            piece['code'] = position.board[i]
-        
-        # Add the piece to the result
-        result[square] = piece
+        try:
+            # Convert the index to a square name (e.g., 'e4')
+            square = coord_to_square(i)
+            
+            # Get the piece type (e.g., 'p', 'r', 'n', etc.)
+            piece_type = position.board[i].lower()
+            
+            # Skip empty squares
+            if piece_type == '.':
+                continue
+                
+            # Determine the piece color
+            # In the Position object, uppercase letters represent WHITE pieces, lowercase represent BLACK
+            color = 'white' if position.board[i].isupper() else 'black'
+            
+            # Map single-letter piece types to full words if requested
+            if use_full_words and piece_type in piece_name_map:
+                piece_type = piece_name_map[piece_type]
+            
+            # Create the piece dictionary
+            piece_dict = {'type': piece_type, 'color': color}
+            
+            # Add the code property if requested
+            if include_code:
+                piece_dict['code'] = position.board[i]
+            
+            # Add the result to the dictionary
+            result[square] = piece_dict
+        except ValueError:
+            # Skip any coordinates that can't be converted to square notation
+            continue
     
     # Ensure all 32 pieces are included in the initial position
     if position.board == initial and len(result) < 32:
@@ -658,14 +768,13 @@ def _board_to_dict_for_parsing_test(position, include_code=True):
 # Convert algebraic notation to internal coordinate
 def square_to_coord(square):
     """
-    Convert a square name (e.g., 'e4') to a coordinate pair.
+    Convert a square name (e.g., 'e4') to an internal board coordinate.
     
     Args:
         square: A string representing a square name (e.g., 'e4')
         
     Returns:
-        A tuple of (file_idx, rank_idx) where file_idx is 0-7 (for a-h)
-        and rank_idx is 0-7 (for 1-8)
+        int: An internal coordinate on the 120-based board representation
     """
     if not square or len(square) != 2:
         raise ValueError(f"Invalid square: {square}")
@@ -675,28 +784,40 @@ def square_to_coord(square):
     # Convert file from a-h to 0-7
     file_idx = ord(file_char) - ord('a')
     
-    # Convert rank from 1-8 to 0-7 (inverted for the chess board representation)
+    # Convert rank from 1-8 to 0-7
     rank_idx = 8 - int(rank_char)
     
     # Validate the indices
     if file_idx < 0 or file_idx > 7 or rank_idx < 0 or rank_idx > 7:
         raise ValueError(f"Invalid square: {square}")
     
-    return file_idx, rank_idx
+    # The board is represented as a 10x12 grid with the 8x8 board in the middle
+    # A1 = 91, H1 = 98, A8 = 21, H8 = 28
+    # We need to map our coordinates to this specific layout
+    return 21 + file_idx + (rank_idx * 10)
 
 # Convert internal coordinate to algebraic notation
 def coord_to_square(coord):
     """
-    Convert a coordinate pair to a square name.
+    Convert an internal board coordinate to a square name.
     
     Args:
-        coord: A tuple of (file_idx, rank_idx) where file_idx is 0-7 (for a-h)
-        and rank_idx is 0-7 (for 1-8)
-    
+        coord: An integer representing an internal coordinate on the 120-based board
+        
     Returns:
-        A string representing a square name (e.g., 'e4')
+        str: A string representing a square name (e.g., 'e4')
     """
-    file_idx, rank_idx = coord
+    # Make sure we have an integer, not a tuple
+    if isinstance(coord, tuple):
+        raise ValueError(f"Expected integer, got tuple: {coord}")
+    
+    # We need to check if the coordinate is on the actual board
+    if coord < 21 or coord > 98 or coord % 10 == 0 or coord % 10 == 9:
+        raise ValueError(f"Invalid coordinate: {coord}")
+    
+    # Calculate the file and rank from the 120-based coordinate
+    file_idx = (coord - 21) % 10
+    rank_idx = (coord - 21) // 10
     
     # Validate the indices
     if file_idx < 0 or file_idx > 7 or rank_idx < 0 or rank_idx > 7:
@@ -705,7 +826,7 @@ def coord_to_square(coord):
     # Convert file from 0-7 to a-h
     file_char = chr(ord('a') + file_idx)
     
-    # Convert rank from 0-7 to 1-8 (inverted for the chess board representation)
+    # Convert rank from 0-7 to 1-8
     rank_char = str(8 - rank_idx)
     
     return file_char + rank_char
