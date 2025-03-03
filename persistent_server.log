@@ -309,3 +309,74 @@
 2025-03-03 03:04:40,650 - INFO - [SERVER] [2025-03-03 03:04:40 -0800] [96739] [ERROR] Can't connect to ('0.0.0.0', 5000)
 2025-03-03 03:04:40,706 - INFO - Server process terminated gracefully
 2025-03-03 03:04:40,707 - INFO - Shutdown complete
+2025-03-03 04:15:50,686 - INFO - Starting Persistent Server for Genetic Chess Engine
+2025-03-03 04:15:50,686 - INFO - Configuration: host=0.0.0.0, port=5000, debug=False
+2025-03-03 04:15:50,772 - INFO - Starting server with Gunicorn on 0.0.0.0:5000 (debug=False)
+2025-03-03 04:15:50,773 - INFO - Server started with PID 103881
+2025-03-03 04:15:50,773 - INFO - Waiting for server to start...
+2025-03-03 04:15:51,787 - INFO - Server is up and running!
+2025-03-03 04:15:51,787 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:51 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:15:51,787 - INFO - Starting server monitoring (interval=5s, max_restarts=10)
+2025-03-03 04:15:51,791 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:51 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:15:52,160 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET / HTTP/1.1" 200 5027 "-" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,221 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/js/chessboard.js HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,222 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/css/styles.css HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,224 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/js/game.js HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,226 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/js/verify_complete_board.js HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,299 - INFO - [SERVER] Initial board state:
+2025-03-03 04:15:52,299 - INFO - [SERVER] a8: black rook
+2025-03-03 04:15:52,299 - INFO - [SERVER] b8: black knight
+2025-03-03 04:15:52,299 - INFO - [SERVER] c8: black bishop
+2025-03-03 04:15:52,299 - INFO - [SERVER] d8: black queen
+2025-03-03 04:15:52,300 - INFO - [SERVER] e8: black king
+2025-03-03 04:15:52,300 - INFO - [SERVER] f8: black bishop
+2025-03-03 04:15:52,300 - INFO - [SERVER] g8: black knight
+2025-03-03 04:15:52,300 - INFO - [SERVER] h8: black rook
+2025-03-03 04:15:52,300 - INFO - [SERVER] a7: black pawn
+2025-03-03 04:15:52,300 - INFO - [SERVER] b7: black pawn
+2025-03-03 04:15:52,300 - INFO - [SERVER] c7: black pawn
+2025-03-03 04:15:52,300 - INFO - [SERVER] d7: black pawn
+2025-03-03 04:15:52,300 - INFO - [SERVER] e7: black pawn
+2025-03-03 04:15:52,300 - INFO - [SERVER] f7: black pawn
+2025-03-03 04:15:52,300 - INFO - [SERVER] g7: black pawn
+2025-03-03 04:15:52,300 - INFO - [SERVER] h7: black pawn
+2025-03-03 04:15:52,300 - INFO - [SERVER] a2: white pawn
+2025-03-03 04:15:52,301 - INFO - [SERVER] b2: white pawn
+2025-03-03 04:15:52,301 - INFO - [SERVER] c2: white pawn
+2025-03-03 04:15:52,301 - INFO - [SERVER] d2: white pawn
+2025-03-03 04:15:52,301 - INFO - [SERVER] e2: white pawn
+2025-03-03 04:15:52,301 - INFO - [SERVER] f2: white pawn
+2025-03-03 04:15:52,302 - INFO - [SERVER] g2: white pawn
+2025-03-03 04:15:52,302 - INFO - [SERVER] h2: white pawn
+2025-03-03 04:15:52,302 - INFO - [SERVER] a1: white rook
+2025-03-03 04:15:52,302 - INFO - [SERVER] b1: white knight
+2025-03-03 04:15:52,302 - INFO - [SERVER] c1: white bishop
+2025-03-03 04:15:52,302 - INFO - [SERVER] d1: white queen
+2025-03-03 04:15:52,302 - INFO - [SERVER] e1: white king
+2025-03-03 04:15:52,302 - INFO - [SERVER] f1: white bishop
+2025-03-03 04:15:52,302 - INFO - [SERVER] g1: white knight
+2025-03-03 04:15:52,302 - INFO - [SERVER] h1: white rook
+2025-03-03 04:15:52,302 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "POST /initialize HTTP/1.1" 200 1659 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,404 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/white-rook.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,405 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/white-pawn.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,407 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/black-pawn.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,409 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/black-rook.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,411 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/white-knight.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,412 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/black-knight.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,413 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/white-bishop.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,414 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/black-bishop.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,415 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/white-queen.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,417 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/black-queen.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,419 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/white-king.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:52,420 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:52 -0800] "GET /static/images/pieces/black-king.svg HTTP/1.1" 304 0 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:15:56,798 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:56 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:15:59,850 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:15:59 -0800] "POST /make_move HTTP/1.1" 404 207 "http://localhost:5000/" "Mozilla/5.0 (X11; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0"
+2025-03-03 04:16:01,805 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:01 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:06,811 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:06 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:11,818 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:11 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:16,824 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:16 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:21,831 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:21 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:26,838 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:26 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:31,844 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:31 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:36,851 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:36 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:41,855 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:41 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
