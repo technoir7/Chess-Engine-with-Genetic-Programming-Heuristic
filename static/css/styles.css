@@ -1,0 +1,505 @@
+/* Base Styles */
+:root {
+    --primary-color: #3f51b5;
+    --primary-dark: #303f9f;
+    --primary-light: #7986cb;
+    --secondary-color: #ff4081;
+    --secondary-dark: #c60055;
+    --secondary-light: #ff79b0;
+    --light-square: #f0d9b5;
+    --dark-square: #b58863;
+    --light-square-highlight: #cdd26a;
+    --dark-square-highlight: #aaa23a;
+    --text-color: #333;
+    --text-light: #777;
+    --background-color: #f5f5f5;
+    --card-background: #fff;
+    --shadow-color: rgba(0, 0, 0, 0.2);
+    --border-radius: 8px;
+    --transition-speed: 0.3s;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-color);
+    background-color: var(--background-color);
+    line-height: 1.6;
+}
+
+h1, h2, h3 {
+    font-family: 'Playfair Display', serif;
+    margin-bottom: 0.5rem;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--border-radius);
+    transition: all var(--transition-speed);
+    font-weight: 500;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* Layout */
+.app-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+
+header h1 {
+    font-size: 2.5rem;
+    color: var(--primary-color);
+}
+
+.tagline {
+    color: var(--text-light);
+    font-style: italic;
+}
+
+main {
+    flex: 1;
+}
+
+.game-area {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: center;
+}
+
+footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding: 1rem 0;
+    color: var(--text-light);
+}
+
+footer a {
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
+
+/* Chessboard */
+.board-container {
+    position: relative;
+    width: 480px;
+    height: 480px;
+    box-shadow: 0 4px 12px var(--shadow-color);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+#chessboard {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    position: relative;
+}
+
+.square {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+    transition: background-color var(--transition-speed);
+}
+
+.light {
+    background-color: var(--light-square);
+}
+
+.dark {
+    background-color: var(--dark-square);
+}
+
+.selected {
+    position: relative;
+}
+
+.selected::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 0, 0.3);
+    z-index: 1;
+}
+
+.highlight-move::before {
+    content: '';
+    position: absolute;
+    width: 25%;
+    height: 25%;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.highlight-capture::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 3px solid rgba(255, 0, 0, 0.5);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.highlight-check {
+    background-color: rgba(255, 0, 0, 0.3) !important;
+}
+
+.square.highlight {
+    background-color: var(--light-square-highlight);
+}
+
+.square.dark.highlight {
+    background-color: var(--dark-square-highlight);
+}
+
+.last-move {
+    position: relative;
+}
+
+.last-move::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(173, 216, 230, 0.5);
+    z-index: 0;
+}
+
+.piece {
+    width: 90%;
+    height: 90%;
+    position: relative;
+    z-index: 2;
+    user-select: none;
+    transition: transform 0.2s;
+}
+
+.coordinates {
+    position: absolute;
+    display: flex;
+    color: var(--text-light);
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.x-coords {
+    bottom: -24px;
+    left: 0;
+    right: 0;
+    justify-content: space-around;
+}
+
+.y-coords {
+    top: 0;
+    bottom: 0;
+    left: -24px;
+    flex-direction: column;
+    justify-content: space-around;
+    align-items: center;
+}
+
+/* Piece Promotion Modal */
+#promotion-modal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+}
+
+.promotion-pieces {
+    display: flex;
+    flex-direction: column;
+    background: var(--card-background);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.promotion-piece {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    font-size: 2.5rem;
+    transition: background-color var(--transition-speed);
+}
+
+.promotion-piece:hover {
+    background-color: var(--primary-light);
+}
+
+/* Game Controls */
+.game-controls {
+    width: 350px;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.game-info, .controls {
+    background-color: var(--card-background);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px var(--shadow-color);
+}
+
+.status-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+#game-status {
+    padding: 0.8rem;
+    background-color: var(--background-color);
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    min-height: 3.2rem;
+}
+
+#move-history-container {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+#move-history {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    gap: 0.5rem;
+    font-family: monospace;
+}
+
+.move-number {
+    color: var(--text-light);
+}
+
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.difficulty-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.difficulty-btn {
+    flex: 1;
+    font-size: 0.9rem;
+    padding: 0.5rem;
+    background-color: var(--background-color);
+}
+
+.difficulty-btn:hover {
+    background-color: var(--primary-light);
+    color: white;
+}
+
+.difficulty-btn.active {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.primary-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.primary-btn:hover {
+    background-color: var(--primary-dark);
+}
+
+.secondary-btn {
+    background-color: var(--background-color);
+    color: var(--text-color);
+}
+
+.secondary-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.secondary-btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.evolve-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem;
+    background-color: var(--background-color);
+    border-radius: var(--border-radius);
+}
+
+.evolve-options input {
+    width: 70px;
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.small-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+#confirm-evolve-btn {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#cancel-evolve-btn {
+    background-color: var(--text-light);
+    color: white;
+}
+
+/* Notification */
+.notification {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 100;
+    max-width: 300px;
+}
+
+.notification-content {
+    background-color: var(--card-background);
+    padding: 1rem;
+    border-radius: var(--border-radius);
+    box-shadow: 0 4px 12px var(--shadow-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+#close-notification {
+    background: none;
+    font-size: 1.2rem;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Loading Overlay */
+#loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    color: white;
+}
+
+.spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    margin-bottom: 1rem;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 950px) {
+    .game-area {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .board-container {
+        width: 400px;
+        height: 400px;
+    }
+    
+    .game-controls {
+        width: 400px;
+    }
+}
+
+@media (max-width: 500px) {
+    .app-container {
+        padding: 1rem;
+    }
+    
+    .board-container {
+        width: 320px;
+        height: 320px;
+    }
+    
+    .game-controls {
+        width: 320px;
+    }
+    
+    .x-coords, .y-coords {
+        display: none;
+    }
+} 
