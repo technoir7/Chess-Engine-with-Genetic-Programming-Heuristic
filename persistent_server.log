@@ -245,3 +245,25 @@
 2025-03-03 03:03:36,978 - INFO - [SERVER] [2025-03-03 03:03:36 -0800] [96205] [ERROR] Connection in use: ('0.0.0.0', 5000)
 2025-03-03 03:03:36,978 - INFO - [SERVER] [2025-03-03 03:03:36 -0800] [96205] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
 2025-03-03 03:03:37,978 - INFO - [SERVER] [2025-03-03 03:03:37 -0800] [96205] [ERROR] Can't connect to ('0.0.0.0', 5000)
+2025-03-03 03:03:38,830 - WARNING - Server process has terminated (exit code: 1)
+2025-03-03 03:03:38,830 - WARNING - Attempting to restart server (attempt 8/10)
+2025-03-03 03:03:39,988 - INFO - Starting server with Gunicorn on 0.0.0.0:5000 (debug=False)
+2025-03-03 03:03:39,989 - INFO - Server started with PID 96300
+2025-03-03 03:03:39,989 - INFO - Waiting for server to start...
+2025-03-03 03:03:40,138 - INFO - [SERVER] [2025-03-03 03:03:40 -0800] [96300] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:03:40,138 - INFO - [SERVER] [2025-03-03 03:03:40 -0800] [96300] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:03:40,993 - INFO - Server is up and running!
+2025-03-03 03:03:40,993 - INFO - Server restarted successfully
+2025-03-03 03:03:41,139 - INFO - [SERVER] [2025-03-03 03:03:41 -0800] [96300] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:03:41,139 - INFO - [SERVER] [2025-03-03 03:03:41 -0800] [96300] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:03:42,139 - INFO - [SERVER] [2025-03-03 03:03:42 -0800] [96300] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:03:42,139 - INFO - [SERVER] [2025-03-03 03:03:42 -0800] [96300] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:03:43,139 - INFO - [SERVER] [2025-03-03 03:03:43 -0800] [96300] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:03:43,140 - INFO - [SERVER] [2025-03-03 03:03:43 -0800] [96300] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:03:44,140 - INFO - [SERVER] [2025-03-03 03:03:44 -0800] [96300] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:03:44,140 - INFO - [SERVER] [2025-03-03 03:03:44 -0800] [96300] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:03:45,140 - INFO - [SERVER] [2025-03-03 03:03:45 -0800] [96300] [ERROR] Can't connect to ('0.0.0.0', 5000)
+2025-03-03 03:03:45,993 - WARNING - Server process has terminated (exit code: 1)
+2025-03-03 03:03:45,994 - WARNING - Attempting to restart server (attempt 9/10)
+2025-03-03 03:03:46,838 - INFO - Received signal 2, shutting down...
+2025-03-03 03:03:46,838 - INFO - Shutdown complete
