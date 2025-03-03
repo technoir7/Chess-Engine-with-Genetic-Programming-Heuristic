@@ -57,18 +57,18 @@ class ChessAppTestCase(unittest.TestCase):
     def test_coord_conversion(self):
         """Test the coordinate conversion functions."""
         # Test square to coord
-        self.assertEqual(square_to_coord('a1'), 112)  # Bottom left
-        self.assertEqual(square_to_coord('h1'), 119)  # Bottom right
-        self.assertEqual(square_to_coord('a8'), 0)    # Top left
-        self.assertEqual(square_to_coord('h8'), 7)    # Top right
-        self.assertEqual(square_to_coord('e4'), 68)   # Center
+        self.assertEqual(square_to_coord('a1'), 91)  # Bottom left
+        self.assertEqual(square_to_coord('h1'), 98)  # Bottom right
+        self.assertEqual(square_to_coord('a8'), 21)  # Top left
+        self.assertEqual(square_to_coord('h8'), 28)  # Top right
+        self.assertEqual(square_to_coord('e4'), 65)  # Center
         
         # Test coord to square
-        self.assertEqual(coord_to_square(112), 'a1')
-        self.assertEqual(coord_to_square(119), 'h1')
-        self.assertEqual(coord_to_square(0), 'a8')
-        self.assertEqual(coord_to_square(7), 'h8')
-        self.assertEqual(coord_to_square(68), 'e4')
+        self.assertEqual(coord_to_square(91), 'a1')
+        self.assertEqual(coord_to_square(98), 'h1')
+        self.assertEqual(coord_to_square(21), 'a8')
+        self.assertEqual(coord_to_square(28), 'h8')
+        self.assertEqual(coord_to_square(65), 'e4')
 
     def test_board_to_dict(self):
         """Test the board_to_dict function."""

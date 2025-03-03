@@ -252,10 +252,10 @@ def board_to_dict(position):
                 # Convert to algebraic notation (a1, b2, etc.)
                 square = f"{chr(97 + file_idx)}{8 - rank_idx}"
                 
-                # Map the piece character to its color
-                # Note: In the rotated position, the case is swapped
-                # So uppercase means black and lowercase means white
-                # We need to convert this back to the normal convention
+                # In thomasahle's chess logic:
+                # - Uppercase (P, N, K, etc.) are white pieces
+                # - Lowercase (p, n, k, etc.) are black pieces
+                # This is the opposite of how the board is printed in debug output
                 if piece.isupper():
                     color = 'white'
                 else:
@@ -287,9 +287,18 @@ def board_to_dict(position):
 # Convert algebraic notation to internal coordinate
 def square_to_coord(square):
     """Convert algebraic notation (e.g., 'e4') to the engine's internal coordinate."""
+    if not square or len(square) != 2:
+        print(f"Warning: Invalid square notation '{square}'")
+        return None
+        
     file_char, rank_char = square[0], square[1]
     file_idx = ord(file_char) - ord('a')  # 'a' -> 0, 'b' -> 1, etc.
     rank_idx = 8 - int(rank_char)         # '1' -> 7, '2' -> 6, etc.
+    
+    # Validate indices are within bounds
+    if file_idx < 0 or file_idx > 7 or rank_idx < 0 or rank_idx > 7:
+        print(f"Warning: Square {square} is out of bounds")
+        return None
     
     # Board is represented as a 120-char string with padding
     # A1=91, H1=98, A8=21, H8=28
@@ -305,8 +314,17 @@ def coord_to_square(coord):
     # Board is represented as a 120-char string with padding
     # A1=91, H1=98, A8=21, H8=28
     # Convert from internal coordinates to file/rank
-    file_idx = (coord % 10) - 1  # Subtract 1 because each row starts with a space
+    
+    # Input validation
+    if coord < 21 or coord > 98:
+        print(f"Warning: Coord {coord} is outside valid range 21-98")
+        # Default to a sensible value to avoid crashing
+        coord = 21  # Default to A8
+    
+    # Calculate indices from coord 
+    # Correct calculation based on the 10x12 board with padding
     rank_idx = (coord - 21) // 10
+    file_idx = (coord % 10) - 1
     
     # Ensure the indices are within valid range
     if file_idx < 0 or file_idx > 7 or rank_idx < 0 or rank_idx > 7:
