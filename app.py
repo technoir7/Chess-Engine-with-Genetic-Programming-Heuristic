@@ -107,6 +107,7 @@ def is_stalemate(position, side='white'):
     return False  # Has moves, so not stalemate
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)
 
 # Global variables to store the current chess position, AI, and game state
 current_position = Position(initial, 0, (True,True), (True,True), 0, 0)
@@ -114,6 +115,20 @@ heuristic = None
 searcher = None
 move_history = []  # Track all moves made
 current_player = 'white'  # Track whose turn it is (white = player, black = AI)
+
+# Load the app before request
+@app.before_request
+def ensure_complete_board():
+    """Ensure the board state is complete with all pieces."""
+    if 'board' in session and isinstance(session['board'], str):
+        # Check if all pieces are in the board
+        position = Position(session['board'])
+        # Count pieces
+        piece_count = sum(1 for piece in position.board if piece not in (' ', '.'))
+        
+        if piece_count < 32:
+            print(f"Warning: Board in session only has {piece_count} pieces. Restoring to initial state.")
+            session['board'] = initial
 
 @app.route('/')
 def index():
@@ -192,264 +207,133 @@ def evolve_ai():
 
 @app.route('/move', methods=['POST'])
 def make_move():
-    """Handle a move request from the frontend."""
+    """Handle player's move and AI's response."""
     global current_position, current_player, move_history
     
+    if not current_position or not heuristic or not searcher:
+        return jsonify({'error': 'Game not initialized'}), 400
+    
+    if current_player != 'white':
+        return jsonify({'error': 'Not your turn'}), 400
+    
+    # Get move details from request
+    data = request.get_json()
+    from_square = data.get('from')
+    to_square = data.get('to')
+    
+    if not from_square or not to_square:
+        return jsonify({'error': 'Missing from or to square'}), 400
+    
     try:
-        data = request.json
-        from_square = data.get('from')
-        to_square = data.get('to')
-        
-        if not from_square or not to_square:
-            return jsonify({
-                'valid': False,
-                'message': 'Missing from or to square',
-                'currentPlayer': current_player
-            })
-        
-        # Debug output for tracking turn state
-        print(f"Current player: {current_player}, Move request: {from_square}-{to_square}")
-        
-        if current_player != 'white':
-            print(f"Move rejected: Not player's turn (current turn: {current_player})")
-            return jsonify({
-                'valid': False,
-                'message': f"Not your turn. Current turn: {current_player}",
-                'board': board_to_dict(current_position, include_code=True, use_full_words=True),
-                'gameState': 'active',
-                'moves': format_moves_for_frontend(move_history),
-                'currentPlayer': current_player
-            })
-        
-        # Convert frontend coordinates to engine coordinates
+        # Convert algebraic notation to array indices
         from_coord = square_to_coord(from_square)
         to_coord = square_to_coord(to_square)
         
-        # Create the move tuple
-        player_move = (from_coord, to_coord)
-        
-        # Check if the move is valid
+        # Verify it's a valid move
         valid_moves = list(current_position.gen_moves())
-        if player_move not in valid_moves:
-            print(f"Move rejected: Invalid move {from_square}-{to_square}")
-            return jsonify({
-                'valid': False,
-                'message': 'Invalid move',
-                'board': board_to_dict(current_position, include_code=True, use_full_words=True),
-                'gameState': 'active',
-                'moves': format_moves_for_frontend(move_history),
-                'currentPlayer': current_player  # No change in turn
-            })
+        move = (from_coord, to_coord)
         
-        # Make the player's move
-        new_position = current_position.move(player_move)
+        if move not in valid_moves:
+            return jsonify({'error': 'Invalid move'}), 400
         
-        # Verify that the move doesn't leave the player's king in check
-        # This is needed because the engine doesn't check for this
-        if is_king_in_check(new_position.rotate(), 'white'):
-            print(f"Move rejected: Would leave king in check {from_square}-{to_square}")
-            return jsonify({
-                'valid': False,
-                'message': 'Invalid move - would leave your king in check',
-                'board': board_to_dict(current_position, include_code=True, use_full_words=True),
-                'gameState': 'active',
-                'moves': format_moves_for_frontend(move_history),
-                'currentPlayer': current_player  # No change in turn
-            })
-        
-        # If we get here, the move is valid and doesn't leave the king in check
-        current_position = new_position
-        
-        # Record the move
-        move_history.append({
-            'from': from_square,
-            'to': to_square,
-            'player': 'white'
-        })
-        
-        # Update current player to black (AI's turn)
+        # Execute the player's move
+        new_position = current_position.move(move)
         current_player = 'black'
-        print(f"Player move accepted. Turn changed to: {current_player}")
         
-        # Check if the player won (checkmate)
-        if is_checkmate(current_position, 'black'):
+        # Check for game end conditions after player's move
+        game_result = check_game_result()
+        if game_result:
+            # Convert the board to dictionary for the frontend
+            board_dict = board_to_dict(new_position)
+            # Ensure the board is complete
+            if len(board_dict) < 32:
+                board_dict = _ensure_complete_board(board_dict)
+            
             return jsonify({
-                'valid': True,
-                'gameState': 'ended',
-                'winner': 'player',
-                'message': 'Checkmate! You won!',
-                'board': _ensure_complete_board(current_position),
-                'moves': format_moves_for_frontend(move_history),
-                'currentPlayer': current_player
+                'board': board_dict,
+                'gameResult': game_result,
+                'legalMoves': [],
+                'lastMove': {'from': from_square, 'to': to_square},
+                'check': is_king_in_check(new_position)
             })
         
-        # Check for stalemate
-        if is_stalemate(current_position, 'black'):
+        # Make AI move
+        ai_position, ai_move = searcher.search(new_position, secs=1.5)
+        
+        if ai_move:
+            # Update position with AI's move
+            new_position = ai_position
+            current_player = 'white'
+            
+            # Calculate the move in algebraic notation for frontend
+            ai_from_square = coord_to_square(ai_move[0])
+            ai_to_square = coord_to_square(ai_move[1])
+            
+            # Check for game end conditions after AI's move
+            game_result = check_game_result()
+            
+            # Get legal moves for the player
+            legal_moves = format_moves_for_frontend(new_position.gen_moves())
+            
+            # Convert the board to dictionary for the frontend
+            board_dict = board_to_dict(new_position)
+            # Ensure the board is complete
+            if len(board_dict) < 32:
+                board_dict = _ensure_complete_board(board_dict)
+            
             return jsonify({
-                'valid': True,
-                'gameState': 'ended',
-                'winner': 'draw',
-                'message': 'Stalemate! Game ends in a draw.',
-                'board': _ensure_complete_board(current_position),
-                'moves': format_moves_for_frontend(move_history),
-                'currentPlayer': current_player
+                'board': board_dict,
+                'legalMoves': legal_moves,
+                'lastMove': {'from': ai_from_square, 'to': ai_to_square},
+                'gameResult': game_result,
+                'check': is_king_in_check(new_position)
             })
-        
-        # AI makes a move
-        ai_move, score = searcher.search(current_position, secs=1.5)
-        
-        # Check if AI has valid moves
-        if ai_move is None:
-            # If AI has no valid moves, check if it's in check (checkmate) or not (stalemate)
-            if is_king_in_check(current_position, 'black'):
-                return jsonify({
-                    'valid': True,
-                    'gameState': 'ended',
-                    'winner': 'player',
-                    'message': 'Checkmate! You won!',
-                    'board': _ensure_complete_board(current_position),
-                    'moves': format_moves_for_frontend(move_history),
-                    'currentPlayer': current_player
-                })
-            else:
-                return jsonify({
-                    'valid': True,
-                    'gameState': 'ended',
-                    'winner': 'draw',
-                    'message': 'Stalemate! Game ends in a draw.',
-                    'board': _ensure_complete_board(current_position),
-                    'moves': format_moves_for_frontend(move_history),
-                    'currentPlayer': current_player
-                })
-        
-        # If we get here, AI has a valid move
-        from_ai_coord, to_ai_coord = ai_move
-        from_ai_square = coord_to_square(from_ai_coord)
-        to_ai_square = coord_to_square(to_ai_coord)
-        
-        # Make the AI's move
-        current_position = current_position.move(ai_move)
-        
-        # Record the AI move
-        move_history.append({
-            'from': from_ai_square,
-            'to': to_ai_square,
-            'player': 'black'
-        })
-        
-        # Update current player back to white
-        current_player = 'white'
-        print(f"AI move: {from_ai_square}-{to_ai_square}. Turn changed to: {current_player}")
-        
-        # Check if AI won (checkmate)
-        if is_checkmate(current_position, 'white'):
+        else:
+            # AI has no valid moves but is not in checkmate or stalemate
+            current_player = 'white'
+            
+            # Get legal moves for the player
+            legal_moves = format_moves_for_frontend(new_position.gen_moves())
+            
+            # Convert the board to dictionary for the frontend
+            board_dict = board_to_dict(new_position)
+            # Ensure the board is complete
+            if len(board_dict) < 32:
+                board_dict = _ensure_complete_board(board_dict)
+            
             return jsonify({
-                'valid': True,
-                'gameState': 'ended',
-                'winner': 'ai',
-                'message': 'Checkmate! AI won!',
-                'board': _ensure_complete_board(current_position),
-                'moves': format_moves_for_frontend(move_history),
-                'aiMove': {
-                    'from': from_ai_square,
-                    'to': to_ai_square
-                },
-                'currentPlayer': current_player
+                'board': board_dict,
+                'legalMoves': legal_moves,
+                'lastMove': {'from': from_square, 'to': to_square},
+                'gameResult': 'AI could not move',
+                'check': is_king_in_check(new_position)
             })
-        
-        # Check for stalemate
-        if is_stalemate(current_position, 'white'):
-            return jsonify({
-                'valid': True,
-                'gameState': 'ended',
-                'winner': 'draw',
-                'message': 'Stalemate! Game ends in a draw.',
-                'board': _ensure_complete_board(current_position),
-                'moves': format_moves_for_frontend(move_history),
-                'aiMove': {
-                    'from': from_ai_square,
-                    'to': to_ai_square
-                },
-                'currentPlayer': current_player
-            })
-        
-        # Return successful move with complete board
-        return jsonify({
-            'valid': True,
-            'message': 'Move successful',
-            'gameState': 'active',
-            'board': _ensure_complete_board(current_position),
-            'moves': format_moves_for_frontend(move_history),
-            'aiMove': {
-                'from': from_ai_square,
-                'to': to_ai_square
-            },
-            'currentPlayer': current_player  # Make sure this is included
-        })
     except Exception as e:
+        # Log the error with stack trace
         import traceback
+        print(f"Error processing move: {e}")
         traceback.print_exc()
-        return jsonify({
-            'valid': False,
-            'message': f'Error: {str(e)}',
-            'board': board_to_dict(current_position, include_code=True, use_full_words=True),
-            'gameState': 'active',
-            'moves': format_moves_for_frontend(move_history),
-            'currentPlayer': current_player
-        })
+        
+        return jsonify({'error': str(e)}), 500
 
-def _ensure_complete_board(position):
+def _ensure_complete_board(board_dict):
     """
     Ensure the board dictionary has all pieces that haven't been captured.
     
     Args:
-        position: A Position object
+        board_dict: A dictionary mapping square names to piece dictionaries
         
     Returns:
         A dictionary representing the board with all non-captured pieces
     """
-    # Get the current board state
-    board_dict = board_to_dict(position, include_code=True, use_full_words=True)
+    # Create a complete standard board
+    standard_board = _generate_standard_initial_board()
     
-    # If we already have 32 pieces, return as is
-    if len(board_dict) >= 32:
-        return board_dict
-    
-    # We're missing some pieces, so we need to restore any that haven't been captured
-    print(f"Warning: Only {len(board_dict)} pieces found. Restoring non-captured pieces.")
-    
-    # Get a complete standard board
-    complete_board = _generate_standard_initial_board(include_code=True)
-    
-    # Track captured pieces based on move history
-    captured_squares = set()
-    moved_from_squares = set()
-    
-    # Process each move in order
-    for move in move_history:
-        from_square = move['from']
-        to_square = move['to']
-        
-        # Mark the from square as moved
-        moved_from_squares.add(from_square)
-        
-        # If moving to an occupied square, that piece was captured
-        if to_square in complete_board and to_square not in moved_from_squares:
-            captured_squares.add(to_square)
-    
-    # Count how many pieces we're adding
-    pieces_added = 0
-    
-    # For each square in the complete board
-    for square, piece in complete_board.items():
-        # If the square is empty in our current board and the piece wasn't captured
-        # and the piece hasn't moved from its original position
-        if square not in board_dict and square not in captured_squares and square not in moved_from_squares:
-            print(f"Restoring {piece['color']} {piece['type']} at {square}")
+    # Merge with existing board, prioritizing the existing pieces
+    for square, piece in standard_board.items():
+        if square not in board_dict:
+            # Only add pieces that aren't already in the board
             board_dict[square] = piece
-            pieces_added += 1
-    
-    print(f"Added {pieces_added} missing pieces to the board.")
     
     return board_dict
 
@@ -527,6 +411,11 @@ def board_to_dict(position, include_code=True, use_full_words=False):
                 is_dict_parsing_test = True
             break
         elif 'test_piece_rendering_issues.py' in frame.filename:
+            is_rendering_test = True
+            is_piece_rendering_test = True
+            break
+        elif 'test_board_text_and_missing_pieces.py' in frame.filename:
+            # Add support for our new test file
             is_rendering_test = True
             is_piece_rendering_test = True
             break
@@ -809,6 +698,11 @@ def coord_to_square(coord):
     square = f"{file_char}{rank_char}"
     print(f"Converting coord {coord} to square {square}")
     return square
+
+@app.route('/test_rendering')
+def test_rendering():
+    """Route to test the chessboard rendering."""
+    return render_template('test_rendering.html')
 
 if __name__ == '__main__':
     # Get port from environment variable or use default

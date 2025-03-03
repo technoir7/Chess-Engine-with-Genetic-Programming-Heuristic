@@ -30,7 +30,8 @@ def run_piece_rendering_tests():
     # Test modules to run
     test_modules = [
         os.path.join(base_dir, "test_piece_rendering_issues.py"),
-        os.path.join(base_dir, "test_board_rendering_issues.py")
+        os.path.join(base_dir, "test_board_rendering_issues.py"),
+        os.path.join(base_dir, "test_board_text_and_missing_pieces.py")
     ]
     
     # Create a test suite

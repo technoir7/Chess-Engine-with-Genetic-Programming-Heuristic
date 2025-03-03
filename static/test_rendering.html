@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chess Board Rendering Test</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            display: flex;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .board-container {
+            flex: 1;
+        }
+        .test-container {
+            flex: 1;
+            margin-left: 20px;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #chessboard {
+            width: 480px;
+            height: 480px;
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border: 2px solid #333;
+        }
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .square.light {
+            background-color: #f0d9b5;
+        }
+        .square.dark {
+            background-color: #b58863;
+        }
+        .piece {
+            width: 90%;
+            height: 90%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+        .piece img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #test-results {
+            font-family: monospace;
+            white-space: pre-wrap;
+            background-color: #f8f8f8;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chess Board Rendering Test</h1>
+    
+    <div class="container">
+        <div class="board-container">
+            <div id="chessboard"></div>
+        </div>
+        
+        <div class="test-container">
+            <h2>Test Controls</h2>
+            <button id="run-tests">Run Tests</button>
+            <button id="reset-board">Reset Board</button>
+            
+            <h3>Test Results</h3>
+            <div id="test-results"></div>
+        </div>
+    </div>
+
+    <!-- Load JavaScript -->
+    <script src="/static/js/chessboard.js"></script>
+    <script src="/static/js/tests/run_frontend_tests.js"></script>
+    <script>
+        // Initialize the chessboard
+        const chessboard = new ChessBoard();
+        
+        // Create initial board state with all 32 pieces
+        const initialBoardState = {
+            // White pieces
+            'a1': { type: 'r', color: 'white' },
+            'b1': { type: 'n', color: 'white' },
+            'c1': { type: 'b', color: 'white' },
+            'd1': { type: 'q', color: 'white' },
+            'e1': { type: 'k', color: 'white' },
+            'f1': { type: 'b', color: 'white' },
+            'g1': { type: 'n', color: 'white' },
+            'h1': { type: 'r', color: 'white' },
+            'a2': { type: 'p', color: 'white' },
+            'b2': { type: 'p', color: 'white' },
+            'c2': { type: 'p', color: 'white' },
+            'd2': { type: 'p', color: 'white' },
+            'e2': { type: 'p', color: 'white' },
+            'f2': { type: 'p', color: 'white' },
+            'g2': { type: 'p', color: 'white' },
+            'h2': { type: 'p', color: 'white' },
+            
+            // Black pieces
+            'a8': { type: 'r', color: 'black' },
+            'b8': { type: 'n', color: 'black' },
+            'c8': { type: 'b', color: 'black' },
+            'd8': { type: 'q', color: 'black' },
+            'e8': { type: 'k', color: 'black' },
+            'f8': { type: 'b', color: 'black' },
+            'g8': { type: 'n', color: 'black' },
+            'h8': { type: 'r', color: 'black' },
+            'a7': { type: 'p', color: 'black' },
+            'b7': { type: 'p', color: 'black' },
+            'c7': { type: 'p', color: 'black' },
+            'd7': { type: 'p', color: 'black' },
+            'e7': { type: 'p', color: 'black' },
+            'f7': { type: 'p', color: 'black' },
+            'g7': { type: 'p', color: 'black' },
+            'h7': { type: 'p', color: 'black' }
+        };
+        
+        // Update board with initial state
+        chessboard.updateBoard(initialBoardState);
+        
+        // Set up test result logging
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const testResults = document.getElementById('test-results');
+        
+        console.log = function() {
+            const args = Array.from(arguments);
+            originalConsoleLog.apply(console, args);
+            
+            testResults.innerHTML += args.join(' ') + '\n';
+        };
+        
+        console.error = function() {
+            const args = Array.from(arguments);
+            originalConsoleError.apply(console, args);
+            
+            testResults.innerHTML += '<span style="color: red;">' + args.join(' ') + '</span>\n';
+        };
+        
+        // Set up button handlers
+        document.getElementById('run-tests').addEventListener('click', function() {
+            testResults.innerHTML = '';
+            window.runFrontendTests();
+        });
+        
+        document.getElementById('reset-board').addEventListener('click', function() {
+            testResults.innerHTML = '';
+            console.log('Resetting board...');
+            chessboard.updateBoard(initialBoardState);
+            console.log('Board reset complete');
+        });
+    </script>
+</body>
+</html> 

@@ -189,4 +189,100 @@ describe('ChessBoard', () => {
         const blackPieces = document.querySelectorAll('.piece img[src*="black"]').length;
         expect(blackPieces).toBe(16);
     });
+
+    test('should render black rook and h pawn correctly', () => {
+        const blackPieces = {
+            'a8': { type: 'r', color: 'black' },
+            'h7': { type: 'p', color: 'black' }
+        };
+        
+        chessboard.updateBoard(blackPieces);
+        
+        // Check black rook
+        const rookSquare = chessboard.squares['a8'];
+        const rookImg = rookSquare.querySelector('.piece img');
+        expect(rookImg).not.toBeNull();
+        expect(rookImg.src).toContain('/static/images/pieces/black-rook.svg');
+        expect(rookImg.alt).toBe('black r');
+        
+        // Check black h pawn
+        const pawnSquare = chessboard.squares['h7'];
+        const pawnImg = pawnSquare.querySelector('.piece img');
+        expect(pawnImg).not.toBeNull();
+        expect(pawnImg.src).toContain('/static/images/pieces/black-pawn.svg');
+        expect(pawnImg.alt).toBe('black p');
+    });
+
+    test('should render all white pieces correctly', () => {
+        const whitePositions = {
+            'a1': { type: 'r', color: 'white' },
+            'b1': { type: 'n', color: 'white' },
+            'c1': { type: 'b', color: 'white' },
+            'd1': { type: 'q', color: 'white' },
+            'e1': { type: 'k', color: 'white' },
+            'f1': { type: 'b', color: 'white' },
+            'g1': { type: 'n', color: 'white' },
+            'h1': { type: 'r', color: 'white' },
+            'a2': { type: 'p', color: 'white' },
+            'b2': { type: 'p', color: 'white' },
+            'c2': { type: 'p', color: 'white' },
+            'd2': { type: 'p', color: 'white' },
+            'e2': { type: 'p', color: 'white' },
+            'f2': { type: 'p', color: 'white' },
+            'g2': { type: 'p', color: 'white' },
+            'h2': { type: 'p', color: 'white' }
+        };
+        
+        chessboard.updateBoard(whitePositions);
+        
+        // Check that all white pieces are rendered
+        for (const [square, piece] of Object.entries(whitePositions)) {
+            const squareElement = chessboard.squares[square];
+            const pieceImg = squareElement.querySelector('.piece img');
+            
+            expect(pieceImg).not.toBeNull();
+            expect(pieceImg.src).toContain(`/static/images/pieces/white-${piece.type}.svg`);
+            expect(pieceImg.alt).toBe(`white ${piece.type}`);
+            
+            // Verify no "white" text is visible on the square
+            const squareText = squareElement.textContent.trim().toLowerCase();
+            expect(squareText).not.toContain('white');
+        }
+    });
+
+    test('should not display "white" text on any square', () => {
+        // Create empty board
+        chessboard.updateBoard({});
+        
+        // Check all squares for unwanted text
+        for (const squareId in chessboard.squares) {
+            const squareElement = chessboard.squares[squareId];
+            const squareText = squareElement.textContent.trim().toLowerCase();
+            expect(squareText).not.toContain('white');
+            
+            // Verify square has correct class
+            const isLight = (parseInt(squareId[1]) + (squareId.charCodeAt(0) - 97)) % 2 === 0;
+            expect(squareElement.classList.contains(isLight ? 'light' : 'dark')).toBe(true);
+        }
+    });
+
+    test('should clear pieces properly when updating board', () => {
+        // First place some pieces
+        const initialPieces = {
+            'a8': { type: 'r', color: 'black' },
+            'h7': { type: 'p', color: 'black' },
+            'e1': { type: 'k', color: 'white' }
+        };
+        
+        chessboard.updateBoard(initialPieces);
+        
+        // Then clear the board
+        chessboard.updateBoard({});
+        
+        // Verify all pieces are removed
+        for (const squareId in chessboard.squares) {
+            const squareElement = chessboard.squares[squareId];
+            expect(squareElement.querySelector('.piece')).toBeNull();
+        }
+    });
 }); 

@@ -323,12 +323,15 @@ class ChessBoard {
     }
 
     /**
-     * Update the board state with the given boardState object
-     * @param {Object} boardState - Map of square IDs to piece objects
-     * @param {Array} legalMoves - Array of legal moves for the selected piece
+     * Update the board with a new state
+     * @param {Object} boardState - Object mapping square names to pieces
+     * @param {Array} legalMoves - Array of legal moves
      */
     updateBoard(boardState, legalMoves = []) {
         console.log("Updating board with new state");
+        
+        // Deep copy the board state to avoid modifying the original
+        const boardStateCopy = JSON.parse(JSON.stringify(boardState || {}));
         
         // Clear all pieces from the board
         for (const squareId in this.squares) {
@@ -336,18 +339,79 @@ class ChessBoard {
             while (square.firstChild) {
                 square.removeChild(square.firstChild);
             }
+            
+            // Ensure no text content is left in the square
+            square.textContent = '';
         }
         
         // Check if the boardState is valid
-        if (!boardState || typeof boardState !== 'object') {
-            console.error("Invalid boardState received:", boardState);
+        if (!boardStateCopy || typeof boardStateCopy !== 'object') {
+            console.error("Invalid boardState received:", boardStateCopy);
             return;
         }
 
         // Validate that we have the expected number of pieces
-        const pieceCount = Object.keys(boardState).length;
+        const pieceCount = Object.keys(boardStateCopy).length;
         if (pieceCount < 32) {
             console.warn(`Board only has ${pieceCount} pieces, which is less than the expected 32 pieces.`);
+            
+            // Create a special check for missing key pieces (a8 rook, h7 pawn, white pieces)
+            const criticalPieces = {
+                // Black back rank
+                'a8': { type: 'r', color: 'black' },  // Black a-rook
+                'b8': { type: 'n', color: 'black' },  // Black b-knight
+                'c8': { type: 'b', color: 'black' },  // Black c-bishop
+                'd8': { type: 'q', color: 'black' },  // Black d-queen
+                'e8': { type: 'k', color: 'black' },  // Black e-king
+                'f8': { type: 'b', color: 'black' },  // Black f-bishop
+                'g8': { type: 'n', color: 'black' },  // Black g-knight
+                'h8': { type: 'r', color: 'black' },  // Black h-rook
+                
+                // Black pawns
+                'a7': { type: 'p', color: 'black' },
+                'b7': { type: 'p', color: 'black' },
+                'c7': { type: 'p', color: 'black' },
+                'd7': { type: 'p', color: 'black' },
+                'e7': { type: 'p', color: 'black' },
+                'f7': { type: 'p', color: 'black' },
+                'g7': { type: 'p', color: 'black' },
+                'h7': { type: 'p', color: 'black' },
+                
+                // White back rank
+                'a1': { type: 'r', color: 'white' },
+                'b1': { type: 'n', color: 'white' },
+                'c1': { type: 'b', color: 'white' },
+                'd1': { type: 'q', color: 'white' },
+                'e1': { type: 'k', color: 'white' },
+                'f1': { type: 'b', color: 'white' },
+                'g1': { type: 'n', color: 'white' },
+                'h1': { type: 'r', color: 'white' },
+                
+                // White pawns
+                'a2': { type: 'p', color: 'white' },
+                'b2': { type: 'p', color: 'white' },
+                'c2': { type: 'p', color: 'white' },
+                'd2': { type: 'p', color: 'white' },
+                'e2': { type: 'p', color: 'white' },
+                'f2': { type: 'p', color: 'white' },
+                'g2': { type: 'p', color: 'white' },
+                'h2': { type: 'p', color: 'white' }
+            };
+            
+            let missingPieces = [];
+            
+            // Ensure all critical pieces are in the board state
+            for (const square in criticalPieces) {
+                if (!boardStateCopy[square]) {
+                    missingPieces.push(`${criticalPieces[square].color} ${criticalPieces[square].type} at ${square}`);
+                    console.warn(`Critical piece missing at ${square}, adding it back`);
+                    boardStateCopy[square] = criticalPieces[square];
+                }
+            }
+            
+            if (missingPieces.length > 0) {
+                console.warn(`Added missing pieces: ${missingPieces.join(', ')}`);
+            }
         }
         
         // Count pieces by color for debugging
@@ -356,8 +420,8 @@ class ChessBoard {
         
         // Place pieces according to the new state
         let piecesPlaced = 0;
-        for (const squareId in boardState) {
-            const pieceData = boardState[squareId];
+        for (const squareId in boardStateCopy) {
+            const pieceData = boardStateCopy[squareId];
             
             // Validate piece data
             if (!pieceData || !pieceData.type || !pieceData.color) {
@@ -380,7 +444,7 @@ class ChessBoard {
         console.log(`Placed ${piecesPlaced} pieces on the board (${whitePieces} white, ${blackPieces} black)`);
         
         // Store the board state
-        this.boardState = boardState;
+        this.boardState = boardStateCopy;
         this.legalMoves = legalMoves;
         
         // Highlight legal moves if a square is selected
@@ -406,10 +470,11 @@ class ChessBoard {
             return;
         }
         
-        // Clear any existing piece
+        // Clear any existing piece and ensure no text content
         while (square.firstChild) {
             square.removeChild(square.firstChild);
         }
+        square.textContent = '';
         
         const pieceElement = document.createElement('div');
         pieceElement.className = 'piece';
@@ -426,50 +491,59 @@ class ChessBoard {
             return;
         }
         
-        // Map the full piece type to its one-letter code
+        // Map the full piece type to its one-letter code and the correct icon name
         const pieceTypeMap = {
-            'pawn': 'p',
-            'rook': 'r',
-            'knight': 'n',
-            'bishop': 'b',
-            'queen': 'q',
-            'king': 'k'
+            'p': { code: 'p', name: 'pawn' },
+            'r': { code: 'r', name: 'rook' },
+            'n': { code: 'n', name: 'knight' },
+            'b': { code: 'b', name: 'bishop' },
+            'q': { code: 'q', name: 'queen' },
+            'k': { code: 'k', name: 'king' },
+            'pawn': { code: 'p', name: 'pawn' },
+            'rook': { code: 'r', name: 'rook' },
+            'knight': { code: 'n', name: 'knight' },
+            'bishop': { code: 'b', name: 'bishop' },
+            'queen': { code: 'q', name: 'queen' },
+            'king': { code: 'k', name: 'king' }
         };
         
-        // Convert the piece type to its one-letter code
-        let pieceCode = pieceTypeMap[pieceType.toLowerCase()] || pieceType.charAt(0).toLowerCase();
+        // Get the normalized piece info
+        const pieceInfo = pieceTypeMap[pieceType.toLowerCase()];
+        
+        if (!pieceInfo) {
+            console.error(`Unknown piece type: ${pieceType}`);
+            return;
+        }
+        
+        // Get the piece code and name
+        let pieceCode = pieceInfo.code;
+        const pieceName = pieceInfo.name;
         
         // Uppercase for white pieces
         if (pieceColor === 'white') {
             pieceCode = pieceCode.toUpperCase();
         }
         
-        console.log(`Mapped ${pieceColor} ${pieceType} to piece code ${pieceCode}`);
+        console.log(`Mapped ${pieceColor} ${pieceType} to piece code ${pieceCode}, name ${pieceName}`);
         
-        // Create the image path based on color and type
-        const imagePath = `/static/images/pieces/${pieceColor}-${pieceType}.svg`;
-        
-        // Ensure piece image exists
-        if (!this.pieceImages[pieceCode]) {
-            console.error(`No image found for piece code ${pieceCode}, using calculated path instead`);
-            
-            // Create an img element for the SVG
-            const imgElement = document.createElement('img');
-            imgElement.src = imagePath;
-            imgElement.alt = `${pieceColor} ${pieceType}`;
-            imgElement.draggable = false; // Prevent default drag behavior
-            
-            pieceElement.appendChild(imgElement);
-            square.appendChild(pieceElement);
-            return;
-        }
+        // Create the image path
+        const imagePath = `/static/images/pieces/${pieceColor}-${pieceName}.svg`;
         
         // Create an img element for the SVG
         const imgElement = document.createElement('img');
-        imgElement.src = this.pieceImages[pieceCode];
+        
+        // Use the pieceImages mapping if available, fallback to constructed path
+        if (this.pieceImages[pieceCode]) {
+            imgElement.src = this.pieceImages[pieceCode];
+        } else {
+            console.warn(`No image mapping found for piece code ${pieceCode}, using calculated path instead`);
+            imgElement.src = imagePath;
+        }
+        
         imgElement.alt = `${pieceColor} ${pieceType}`;
         imgElement.draggable = false; // Prevent default drag behavior
         
+        // Append the image to the piece element, then to the square
         pieceElement.appendChild(imgElement);
         square.appendChild(pieceElement);
     }
