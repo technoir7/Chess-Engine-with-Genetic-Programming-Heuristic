@@ -87,7 +87,7 @@ class ChessBoard {
         if (this.selectedSquare) {
             // Check if the clicked square is a valid move
             const isLegalMove = this.legalMoves.some(move => {
-                return move.to === squareId;
+                return move.from === this.selectedSquare && move.to === squareId;
             });
 
             if (isLegalMove) {
@@ -137,11 +137,12 @@ class ChessBoard {
      * Highlight legal moves for the selected piece
      */
     highlightLegalMoves() {
-        // This would normally fetch legal moves from the chess engine
-        // For now, we'll use our locally stored legal moves
+        // Highlight moves that are available for the selected piece
         for (const move of this.legalMoves) {
             if (move.from === this.selectedSquare) {
                 const targetSquare = this.squares[move.to];
+                if (!targetSquare) continue; // Skip if square doesn't exist
+                
                 targetSquare.classList.add('highlight');
                 
                 // If it's a capture, add capture highlight
@@ -193,6 +194,8 @@ class ChessBoard {
      * @param {Array} legalMoves - Array of legal move objects
      */
     updateBoard(boardState, legalMoves = []) {
+        console.log("Updating chessboard with state:", boardState);
+        
         this.boardState = boardState;
         this.legalMoves = legalMoves;
         
@@ -204,6 +207,7 @@ class ChessBoard {
         // Place pieces according to the new state
         for (const squareId in boardState) {
             const pieceData = boardState[squareId];
+            console.log(`Placing ${pieceData.color} ${pieceData.type} on ${squareId}`);
             this.placePiece(squareId, pieceData.type, pieceData.color);
         }
     }
@@ -215,7 +219,13 @@ class ChessBoard {
      * @param {string} pieceColor - Color of the piece ('white' or 'black')
      */
     placePiece(squareId, pieceType, pieceColor) {
+        console.log(`Placing ${pieceColor} ${pieceType} on ${squareId}`);
         const square = this.squares[squareId];
+        if (!square) {
+            console.error(`Square ${squareId} not found`);
+            return;
+        }
+        
         const pieceElement = document.createElement('div');
         pieceElement.className = 'piece';
         

@@ -26,7 +26,7 @@ class node:
     results=[n.evaluate(inp) for n in self.children]
     return self.function(results)
   def display(self,indent=0):
-    print (' '*indent)+self.name
+    print((' '*indent)+self.name)
     for c in self.children:
       c.display(indent+1)
     
@@ -38,7 +38,7 @@ class paramnode:
   def evaluate(self,inp):
     return inp[self.idx]
   def display(self,indent=0):
-    print '%sp%d' % (' '*indent,self.idx)
+    print('%sp%d' % (' '*indent,self.idx))
     
     
 class constnode:
@@ -48,7 +48,7 @@ class constnode:
     return self.v
   def display(self,indent=0):
     # print '%s%d' % (' '*indent,self.v)
-    print '%s%f' % (' '*indent,self.v)
+    print('%s%f' % (' '*indent,self.v))
 
 class piecenode:
   def __init__(self, piece, name):
@@ -62,7 +62,7 @@ class piecenode:
   def display(self,indent=0):
     # print '%s%d' % (' '*indent,self.v)
     # print (' '*indent)+self.name
-    print (' '*indent) + self.name + " " + str(self.value)
+    print((' '*indent) + self.name + " " + str(self.value))
 
 class eval_node:
   def __init__(self,state):
@@ -78,7 +78,7 @@ class eval_node:
     self.score = inp.evaluation()
     return self.score
   def display(self,indent=0):
-    print (' '*indent)+self.name + " " + str(self.score)
+    print((' '*indent)+self.name + " " + str(self.score))
     # for c in self.children:
     #   c.display(indent+1)
 
@@ -153,9 +153,9 @@ def match(state, players):
     # print("My move:", render(119-move[0]) + render(119-move[1]))
     pos = pos.move(move)
     moves += 1
-    # print moves
+    # print(moves)
   # print("final score")
-  # print score
+  # print(score)
   if pos.score > 0:
     return 1
   elif pos.score < 0:
@@ -250,7 +250,7 @@ def evolve(state, pc,popsize,rankfunction,maxgen=500,
   for i in range(maxgen):
     print("inside evolve for loop")
     scores=rankfunction(state, population)
-    print scores[0][0]
+    print(scores[0][0])
     scores_length = len(scores)
     if scores[0][0]==0: break
         
@@ -260,11 +260,11 @@ def evolve(state, pc,popsize,rankfunction,maxgen=500,
     # Build the next generation
     while len(newpop)<popsize:
       random_num = random.random()
-      print random_num
+      print(random_num)
       print("inside while")
       if random_num>pnew:
         print("inside while and if statement")
-        print scores_length
+        print(scores_length)
         newpop.append(mutate(
                       crossover(scores[selectindex() % scores_length][1],
                                  scores[selectindex() % scores_length][1],

@@ -1,28 +1,45 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-Run script for the Genetic Chess Engine web application.
+Run script for the Genetic Chess Engine application.
+This script starts the Flask server and opens the application in a web browser.
 """
+
 import os
+import sys
 import webbrowser
 from threading import Timer
-from app import app
 
 def open_browser():
-    """Open a browser tab to the application."""
-    webbrowser.open_new('http://localhost:5000/')
-
-if __name__ == '__main__':
-    # Open browser after a short delay
+    """Open the browser to the application URL."""
+    # Get port from environment variable or use default
     port = int(os.environ.get('PORT', 5000))
+    
+    # Get host from environment variable or use default
+    host = os.environ.get('HOST', '0.0.0.0')
+    
+    # Construct URL (use localhost for browser, even if server binds to 0.0.0.0)
+    url = f'http://localhost:{port}'
+    webbrowser.open(url)
+    print(f"Opening browser to {url}")
+
+if __name__ == "__main__":
+    print("Starting Genetic Chess Engine...")
+    
+    # Schedule browser opening
     Timer(1.5, open_browser).start()
     
-    # Start the Flask application
-    print("=" * 80)
-    print("Genetic Chess Engine")
-    print("=" * 80)
-    print("\nStarting web server...")
-    print("Open your browser to http://localhost:5000/ if it doesn't open automatically")
-    print("\nPress Ctrl+C to quit")
-    print("=" * 80)
-    
-    app.run(host='0.0.0.0', port=port, debug=False) 
+    # Import Flask app and run it
+    try:
+        from app import app
+        
+        # Get configuration from environment variables
+        port = int(os.environ.get('PORT', 5000))
+        host = os.environ.get('HOST', '0.0.0.0')
+        debug = os.environ.get('DEBUG', 'False').lower() in ('true', 't', '1')
+        
+        # Start the Flask app
+        print(f"Server will be available at http://localhost:{port}/")
+        app.run(debug=debug, host=host, port=port)
+    except KeyboardInterrupt:
+        print("\nServer stopped by user.")
+        sys.exit(0) 

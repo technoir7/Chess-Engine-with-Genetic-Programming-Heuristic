@@ -20,6 +20,8 @@ cd genetic_chess_engine
 2. Install the required dependencies:
 ```bash
 pip install -r requirements.txt
+# Or if using Python 3 explicitly:
+pip3 install -r requirements.txt
 ```
 
 ## Quick Start
@@ -27,7 +29,23 @@ pip install -r requirements.txt
 The easiest way to get started is to use the start script, which provides a menu-driven interface:
 
 ```bash
+# Make the script executable first (if needed)
+chmod +x start.py
+
+# Then run it
 ./start.py
+# Or with explicit Python 3:
+python3 start.py
+```
+
+Alternatively, you can use our recommended run script which handles environment issues:
+
+```bash
+# Make the script executable 
+chmod +x run.sh
+
+# Run the application directly
+./run.sh
 ```
 
 This gives you options to:
@@ -43,21 +61,34 @@ Alternatively, you can use the following individual commands:
 1. For help and getting started information:
 ```bash
 ./help.py
+# Or with explicit Python 3:
+python3 help.py
 ```
 
 2. Start the Flask server (choose one of the following methods):
 ```bash
-# Method 1: Using the run script (opens browser automatically)
-./run.py
+# Method 1: Using the run.sh script (recommended)
+./run.sh
 
-# Method 2: Using Flask directly
-python app.py
+# Method 2: Using the run script (opens browser automatically)
+./run.py
+# Or with explicit Python 3:
+python3 run.py
+
+# Method 3: Using Flask directly
+python3 app.py
 ```
 
 3. Open your web browser and navigate to:
 ```
 http://localhost:5000
 ```
+
+**Note on connectivity:** The server is configured to listen on all interfaces (0.0.0.0). If you can't connect to localhost, please check:
+- No firewall is blocking port 5000
+- No other service is using port 5000
+- Try accessing the app directly at http://127.0.0.1:5000
+- Run the troubleshooting tool: `./troubleshoot.py`
 
 4. Play chess against the AI:
    - Choose a difficulty level (Easy, Medium, Hard)
@@ -80,17 +111,38 @@ The chess engine uses a genetic programming approach to evolve its evaluation fu
 To run all tests (both Python and JavaScript):
 ```bash
 ./run_tests.py
+# Or with explicit Python 3:
+python3 run_tests.py
 ```
 
 To run only the Python backend tests:
 ```bash
-python test_chess_app.py
+python3 test_chess_app.py
 ```
 
 To run only the JavaScript frontend tests, open the following file in your browser:
 ```
 static/js/tests/test.html
 ```
+
+## Troubleshooting
+
+If you encounter any issues running the application, use the troubleshooting tool:
+
+```bash
+./troubleshoot.py
+# Or with explicit Python 3:
+python3 troubleshoot.py
+```
+
+This tool will:
+- Check your Python version
+- Verify Flask is installed correctly
+- Check if port 5000 is available
+- Test the Flask application
+- Provide detailed suggestions for fixing common issues
+
+For detailed troubleshooting information, see the TROUBLESHOOTING.md file.
 
 ## Project Structure
 
@@ -107,6 +159,7 @@ genetic_chess_engine/
 ├── run_tests.py             # Script to run all tests
 ├── start.py                 # Menu-driven script to start everything
 ├── test_chess_app.py        # Backend tests
+├── troubleshoot.py          # Troubleshooting tool
 ├── static/                  # Static assets
 │   ├── css/
 │   │   └── styles.css       # CSS styles

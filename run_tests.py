@@ -1,60 +1,65 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 """
-Test runner for the Genetic Chess Engine.
-Runs all Python tests and opens the browser for JavaScript tests.
+Test runner script for the Genetic Chess Engine.
+This script runs both Python and JavaScript tests.
 """
-import unittest
 import os
 import sys
+import unittest
 import webbrowser
 from threading import Timer
-import test_chess_app
+
+# Get the absolute path to the JS test file
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+JS_TEST_PATH = os.path.join(BASE_DIR, 'static', 'js', 'tests', 'test.html')
 
 def run_python_tests():
-    """Run all Python unit tests."""
-    loader = unittest.TestLoader()
-    suite = loader.loadTestsFromModule(test_chess_app)
+    """Run the Python unit tests for the backend."""
+    print("Running Python backend tests...\n")
     
-    # Run the tests
-    print("=" * 80)
-    print("Running Python tests...")
-    print("=" * 80)
-    
-    runner = unittest.TextTestRunner(verbosity=2)
-    result = runner.run(suite)
-    
-    return result.wasSuccessful()
+    # Load tests from the test_chess_app module
+    try:
+        from test_chess_app import ChessAppTestCase
+        
+        # Create a test suite and run it
+        test_suite = unittest.TestLoader().loadTestsFromTestCase(ChessAppTestCase)
+        test_runner = unittest.TextTestRunner(verbosity=2)
+        result = test_runner.run(test_suite)
+        
+        # Return True if all tests passed
+        return result.wasSuccessful()
+    except ImportError as e:
+        print(f"Error importing test module: {e}")
+        return False
 
 def open_js_tests():
-    """Open the JavaScript tests in a browser."""
-    js_test_path = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        'static', 'js', 'tests', 'test.html'
-    )
+    """Open the JavaScript tests in a web browser."""
+    print("\nRunning JavaScript frontend tests...\n")
     
-    test_url = f'file://{js_test_path}'
-    print("\n" + "=" * 80)
-    print("Opening JavaScript tests in browser...")
-    print(f"If the browser doesn't open automatically, go to: {test_url}")
-    print("=" * 80)
-    
-    # Open in browser
-    webbrowser.open_new(test_url)
+    # Convert the file path to a file URL
+    if os.path.exists(JS_TEST_PATH):
+        file_url = f"file://{JS_TEST_PATH}"
+        print(f"Opening browser to: {file_url}\n")
+        webbrowser.open(file_url)
+    else:
+        print(f"Error: JavaScript test file not found at: {JS_TEST_PATH}")
 
-if __name__ == '__main__':
-    print("\nGenetic Chess Engine Test Runner")
+if __name__ == "__main__":
+    print("=" * 80)
+    print("Running Genetic Chess Engine Tests")
     print("=" * 80)
     
-    # Run Python tests
-    python_tests_passed = run_python_tests()
+    # Run Python tests first
+    python_success = run_python_tests()
     
-    # Open JavaScript tests in browser after a short delay
-    Timer(1.5, open_js_tests).start()
+    # Run JavaScript tests after 1 second
+    Timer(1.0, open_js_tests).start()
     
-    # Exit with appropriate status code
-    if not python_tests_passed:
-        print("\nPython tests failed!")
+    # Return appropriate exit code for CI/CD systems
+    if not python_success:
+        print("\nSome Python tests failed!")
         sys.exit(1)
     else:
-        print("\nPython tests passed. Check browser for JavaScript test results.")
+        print("\nAll Python tests passed!")
+        # We don't know the result of JS tests since they run in the browser
         sys.exit(0) 

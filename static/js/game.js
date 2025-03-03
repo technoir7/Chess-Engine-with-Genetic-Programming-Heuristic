@@ -159,20 +159,80 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateBoardFromBackend(boardState) {
+        // Log the received board state
+        console.log("Received board state from backend:", boardState);
+        
         // Convert backend board representation to frontend format
         // and update the chessboard
         chessboard.updateBoard(boardState);
         
         // Generate legal moves from the current position
         const legalMoves = generateLegalMoves(boardState);
+        console.log(`Generated ${legalMoves.length} legal moves`);
         chessboard.legalMoves = legalMoves;
     }
 
     function generateLegalMoves(boardState) {
-        // This is a placeholder. In a real implementation, we would
-        // either get legal moves from the backend or calculate them here.
-        // For now, we'll return empty array as the backend handles validation
-        return [];
+        // Generate pseudo-legal moves to allow piece selection and movement
+        // The backend will validate if the move is actually legal
+        const legalMoves = [];
+        
+        // For each piece on the board that belongs to the player (white)
+        for (const squareId in boardState) {
+            if (boardState[squareId].color === 'white') {
+                const pieceType = boardState[squareId].type;
+                const [file, rank] = [squareId[0], parseInt(squareId[1])];
+                
+                // Add pseudo-legal moves based on piece type
+                switch (pieceType) {
+                    case 'p': // Pawn
+                        // Pawns can move forward 1 square (or 2 from starting position)
+                        // and capture diagonally
+                        const forwardSquare = `${file}${rank + 1}`;
+                        if (!boardState[forwardSquare]) {
+                            legalMoves.push({ from: squareId, to: forwardSquare });
+                            
+                            // If pawn is at starting position, it can move 2 squares
+                            if (rank === 2) {
+                                const doubleForwardSquare = `${file}${rank + 2}`;
+                                if (!boardState[doubleForwardSquare]) {
+                                    legalMoves.push({ from: squareId, to: doubleForwardSquare });
+                                }
+                            }
+                        }
+                        
+                        // Diagonal captures
+                        ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].forEach(f => {
+                            if (Math.abs(f.charCodeAt(0) - file.charCodeAt(0)) === 1) {
+                                const captureSquare = `${f}${rank + 1}`;
+                                if (boardState[captureSquare] && boardState[captureSquare].color === 'black') {
+                                    legalMoves.push({ from: squareId, to: captureSquare });
+                                }
+                            }
+                        });
+                        break;
+                        
+                    // For other pieces, just use the simple approach of allowing moves to any square
+                    // The backend will validate
+                    default:
+                        for (let toFile = 'a'; toFile <= 'h'; toFile = String.fromCharCode(toFile.charCodeAt(0) + 1)) {
+                            for (let toRank = 1; toRank <= 8; toRank++) {
+                                const targetSquare = `${toFile}${toRank}`;
+                                // Don't allow moving to the same square or capturing own pieces
+                                if (targetSquare !== squareId && 
+                                    (!boardState[targetSquare] || boardState[targetSquare].color !== 'white')) {
+                                    legalMoves.push({
+                                        from: squareId,
+                                        to: targetSquare
+                                    });
+                                }
+                            }
+                        }
+                }
+            }
+        }
+        
+        return legalMoves;
     }
 
     function setDifficulty(difficulty) {
