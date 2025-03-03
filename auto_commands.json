@@ -12,7 +12,9 @@
       "python -m vitest",
       "python",
       "source *",
-      "source venv/bin/activate"
+      "source venv/bin/activate",
+      "mkdir *",
+      "mv *"
     ]
   },
   "version": "1.0.0"
