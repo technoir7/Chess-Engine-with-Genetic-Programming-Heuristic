@@ -13,7 +13,7 @@ A chess engine that uses genetic programming to evolve and improve its play stra
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/genetic_chess_engine.git
+git clone https://github.com/technoir7/genetic_chess_engine.git
 cd genetic_chess_engine
 ```
 

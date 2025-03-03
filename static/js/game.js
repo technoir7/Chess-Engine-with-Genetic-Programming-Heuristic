@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentDifficulty = 'medium';
     let moveStack = [];
     let currentMoveNumber = 1;
+    let currentPlayer = 'white'; // Track whose turn it is
 
     // Initialize game
     init();
@@ -56,6 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
         chessboard.makeMove = (from, to) => {
             if (!gameActive) return;
             
+            // Check if it's player's turn
+            if (currentPlayer !== 'white') {
+                showNotification("Not your turn! Wait for the AI to make a move.");
+                return;
+            }
+            
             // Call the original method
             originalMakeMove.call(chessboard, from, to);
             
@@ -72,6 +79,7 @@ document.addEventListener('DOMContentLoaded', () => {
         moveStack = [];
         currentMoveNumber = 1;
         moveHistory.innerHTML = '';
+        currentPlayer = 'white'; // Reset to player's turn
         
         // Make API call to initialize a new game
         fetch('/initialize', {
@@ -88,6 +96,12 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Update game status
             updateGameStatus(data.message);
+            
+            // Update current player if provided
+            if (data.currentPlayer) {
+                currentPlayer = data.currentPlayer;
+                console.log("Current player set to:", currentPlayer);
+            }
             
             // Enable/disable buttons
             updateButtonStates();
@@ -113,6 +127,12 @@ document.addEventListener('DOMContentLoaded', () => {
         })
         .then(response => response.json())
         .then(data => {
+            // Update current player from backend response
+            if (data.currentPlayer) {
+                currentPlayer = data.currentPlayer;
+                console.log("Current player updated to:", currentPlayer);
+            }
+            
             if (data.valid) {
                 // Add the move to history
                 addMoveToHistory(from, to, 'player');
