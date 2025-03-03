@@ -77,6 +77,32 @@ class ChessBoard {
      * @param {string} squareId - ID of the clicked square (e.g., 'e4')
      */
     handleSquareClick(squareId) {
+        console.log(`Square ${squareId} clicked`);
+        
+        // Check if we should handle this click
+        const gameActiveEvent = new CustomEvent('checkGameActive', { 
+            detail: { callback: (isActive, currentPlayer) => {
+                if (!isActive) {
+                    console.log("Game is not active, ignoring click");
+                    return;
+                }
+                
+                if (currentPlayer !== 'white') {
+                    console.log("Not player's turn, ignoring click");
+                    return;
+                }
+                
+                this.handlePlayerSquareClick(squareId);
+            }}
+        });
+        document.dispatchEvent(gameActiveEvent);
+    }
+    
+    /**
+     * Handle a valid player square click
+     * @param {string} squareId - ID of the clicked square
+     */
+    handlePlayerSquareClick(squareId) {
         // If no piece is selected and the clicked square has a piece, select it
         if (!this.selectedSquare && this.boardState[squareId] && this.boardState[squareId].color === 'white') {
             this.selectSquare(squareId);
@@ -161,14 +187,123 @@ class ChessBoard {
      * @param {string} to - Target square (e.g., 'e4')
      */
     makeMove(from, to) {
+        console.log(`Attempting to move from ${from} to ${to}`);
+        
+        // Validate the move
+        const isLegalMove = this.legalMoves.some(move => {
+            return move.from === from && move.to === to;
+        });
+        
+        if (!isLegalMove) {
+            console.error(`Move from ${from} to ${to} is not legal`);
+            return false;
+        }
+        
         // Store the move for highlighting
         this.lastMove = { from, to };
         
         // Deselect the current square
         this.deselectSquare();
         
-        // Note: The actual board update will happen when game.js receives
-        // the server response and calls updateBoard with the new state
+        // Make API call to backend
+        this.sendMoveToBackend(from, to);
+        
+        return true;
+    }
+    
+    /**
+     * Send a move to the backend
+     * @param {string} from - Starting square (e.g., 'e2')
+     * @param {string} to - Target square (e.g., 'e4')
+     */
+    sendMoveToBackend(from, to) {
+        console.log(`Sending move from ${from} to ${to} to backend`);
+        
+        // Trigger loading event
+        const loadingEvent = new CustomEvent('showLoading', { 
+            detail: { message: 'Processing move...' }
+        });
+        document.dispatchEvent(loadingEvent);
+        
+        fetch('/move', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ from, to })
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log("Move response:", data);
+            
+            if (data.valid) {
+                // Update the board with the new state
+                this.updateBoard(data.board, data.legalMoves || []);
+                
+                // Highlight the last move
+                if (data.aiMove) {
+                    this.lastMove = data.aiMove;
+                    this.highlightLastMove();
+                }
+                
+                // Handle game state
+                if (data.gameState === 'ended') {
+                    // Game has ended, trigger an event
+                    const event = new CustomEvent('gameEnded', { 
+                        detail: { 
+                            winner: data.winner,
+                            message: data.message
+                        }
+                    });
+                    document.dispatchEvent(event);
+                }
+                
+                // Trigger move completed event
+                const moveEvent = new CustomEvent('moveCompleted', { 
+                    detail: { 
+                        valid: true,
+                        player: 'white',
+                        from: from,
+                        to: to,
+                        aiMove: data.aiMove,
+                        currentPlayer: data.currentPlayer
+                    }
+                });
+                document.dispatchEvent(moveEvent);
+            } else {
+                console.error("Move rejected:", data.message);
+                
+                // Trigger move failed event
+                const moveEvent = new CustomEvent('moveFailed', { 
+                    detail: { 
+                        message: data.message
+                    }
+                });
+                document.dispatchEvent(moveEvent);
+                
+                // Update the board to revert to valid state
+                if (data.board) {
+                    this.updateBoard(data.board, data.legalMoves || []);
+                }
+            }
+            
+            // Trigger hide loading event
+            const hideLoadingEvent = new CustomEvent('hideLoading', {});
+            document.dispatchEvent(hideLoadingEvent);
+        })
+        .catch(error => {
+            console.error('Error sending move to backend:', error);
+            
+            // Trigger error event
+            const errorEvent = new CustomEvent('moveError', { 
+                detail: { error }
+            });
+            document.dispatchEvent(errorEvent);
+            
+            // Hide loading on error
+            const hideLoadingEvent = new CustomEvent('hideLoading', {});
+            document.dispatchEvent(hideLoadingEvent);
+        });
     }
 
     /**

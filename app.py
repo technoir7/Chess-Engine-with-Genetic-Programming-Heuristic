@@ -191,11 +191,18 @@ def evolve_ai():
 
 @app.route('/move', methods=['POST'])
 def make_move():
-    global current_position, searcher, move_history, current_player
+    global current_position, current_player, move_history
     
-    data = request.get_json()
+    data = request.json
     from_square = data.get('from')
     to_square = data.get('to')
+    
+    if not from_square or not to_square:
+        return jsonify({
+            'valid': False,
+            'message': 'Missing from or to square',
+            'currentPlayer': current_player
+        })
     
     # Debug output for tracking turn state
     print(f"Current player: {current_player}, Move request: {from_square}-{to_square}")
@@ -319,103 +326,70 @@ def make_move():
                 'currentPlayer': current_player
             })
     
-    # Make sure AI doesn't try to move to the same square the player just moved to
-    # This helps prevent conflicts where the AI might capture a piece the player just moved
-    max_attempts = 10
-    attempt = 0
-    
-    # Validate that the AI's proposed move is actually valid
-    ai_valid_moves = list(current_position.gen_moves())
-    if ai_move not in ai_valid_moves:
-        print(f"WARNING: AI tried to make an invalid move: {ai_move}")
-        # Try to find another valid move
-        if ai_valid_moves:
-            ai_move = ai_valid_moves[0]  # Use the first valid move as a fallback
-        else:
-            # No valid moves - check for checkmate or stalemate
-            if is_king_in_check(current_position, 'black'):
-                return jsonify({
-                    'valid': True,
-                    'gameState': 'ended',
-                    'winner': 'player',
-                    'message': 'Checkmate! You won!',
-                    'board': board_to_dict(current_position),
-                    'moves': format_moves_for_frontend(move_history),
-                    'currentPlayer': current_player
-                })
-            else:
-                return jsonify({
-                    'valid': True,
-                    'gameState': 'ended',
-                    'winner': 'draw',
-                    'message': 'Stalemate! Game ends in a draw.',
-                    'board': board_to_dict(current_position),
-                    'moves': format_moves_for_frontend(move_history),
-                    'currentPlayer': current_player
-                })
+    # If we get here, AI has a valid move
+    from_ai_coord, to_ai_coord = ai_move
+    from_ai_square = coord_to_square(from_ai_coord)
+    to_ai_square = coord_to_square(to_ai_coord)
     
     # Make the AI's move
-    ai_from_square = coord_to_square(ai_move[0])
-    ai_to_square = coord_to_square(ai_move[1])
+    current_position = current_position.move(ai_move)
     
-    # Apply the AI's move
-    try:
-        current_position = current_position.move(ai_move)
-    except Exception as e:
-        print(f"ERROR: Failed to apply AI move: {ai_move} - {str(e)}")
-        # Return a more helpful error message to the client
-        return jsonify({
-            'valid': True,
-            'error': True,
-            'message': f"Error applying AI move {ai_from_square}-{ai_to_square}: {str(e)}",
-            'board': board_to_dict(current_position),
-            'gameState': 'active',
-            'moves': format_moves_for_frontend(move_history),
-            'currentPlayer': current_player
-        })
-    
-    # Record the AI's move
+    # Record the AI move
     move_history.append({
-        'from': ai_from_square,
-        'to': ai_to_square,
+        'from': from_ai_square,
+        'to': to_ai_square,
         'player': 'black'
     })
     
-    # Update current player
+    # Update current player back to white
     current_player = 'white'
-    print(f"AI move: {ai_from_square}-{ai_to_square}. Turn changed to: {current_player}")
+    print(f"AI move: {from_ai_square}-{to_ai_square}. Turn changed to: {current_player}")
     
-    # Check if the player is in checkmate
-    in_check = is_king_in_check(current_position, 'white')
-    is_checkmated = is_checkmate(current_position, 'white')
-    is_stalemated = is_stalemate(current_position, 'white')
+    # Check if AI won (checkmate)
+    if is_checkmate(current_position, 'white'):
+        return jsonify({
+            'valid': True,
+            'gameState': 'ended',
+            'winner': 'ai',
+            'message': 'Checkmate! AI won!',
+            'board': board_to_dict(current_position),
+            'moves': format_moves_for_frontend(move_history),
+            'aiMove': {
+                'from': from_ai_square,
+                'to': to_ai_square
+            },
+            'currentPlayer': current_player
+        })
     
-    response = {
+    # Check for stalemate
+    if is_stalemate(current_position, 'white'):
+        return jsonify({
+            'valid': True,
+            'gameState': 'ended',
+            'winner': 'draw',
+            'message': 'Stalemate! Game ends in a draw.',
+            'board': board_to_dict(current_position),
+            'moves': format_moves_for_frontend(move_history),
+            'aiMove': {
+                'from': from_ai_square,
+                'to': to_ai_square
+            },
+            'currentPlayer': current_player
+        })
+    
+    # Return successful move
+    return jsonify({
         'valid': True,
-        'aiMove': {
-            'from': ai_from_square,
-            'to': ai_to_square
-        },
-        'board': board_to_dict(current_position),
+        'message': 'Move successful',
         'gameState': 'active',
+        'board': board_to_dict(current_position),
         'moves': format_moves_for_frontend(move_history),
-        'currentPlayer': current_player,
-        'inCheck': in_check
-    }
-    
-    # Check game ending conditions
-    if is_checkmated:
-        response['gameState'] = 'ended'
-        response['winner'] = 'ai'
-        response['message'] = 'Checkmate! AI won!'
-    elif is_stalemated:
-        response['gameState'] = 'ended'
-        response['winner'] = 'draw'
-        response['message'] = 'Stalemate! Game ends in a draw.'
-    elif in_check:
-        response['message'] = 'Check!'
-    
-    return jsonify(response)
+        'aiMove': {
+            'from': from_ai_square,
+            'to': to_ai_square
+        },
+        'currentPlayer': current_player  # Make sure this is included
+    })
 
 def format_moves_for_frontend(moves):
     """

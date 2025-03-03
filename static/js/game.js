@@ -51,24 +51,66 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupChessboardEvents() {
-        // When the chessboard makes a move, we need to send it to the backend
-        // This is done by extending the ChessBoard.makeMove method
-        const originalMakeMove = chessboard.makeMove;
-        chessboard.makeMove = (from, to) => {
-            if (!gameActive) return;
+        // Set up listeners for events from the chessboard
+        document.addEventListener('moveCompleted', (event) => {
+            console.log('Move completed event received:', event.detail);
             
-            // Check if it's player's turn
-            if (currentPlayer !== 'white') {
-                showNotification("Not your turn! Wait for the AI to make a move.");
-                return;
+            // Update current player from event
+            if (event.detail.currentPlayer) {
+                currentPlayer = event.detail.currentPlayer;
+                console.log("Current player updated to:", currentPlayer);
             }
             
-            // Call the original method
-            originalMakeMove.call(chessboard, from, to);
+            // If AI made a move, update the move history
+            if (event.detail.aiMove) {
+                // Add the player's move
+                addMoveToHistory(event.detail.from, event.detail.to, 'player');
+                
+                // Add the AI's move
+                addMoveToHistory(event.detail.aiMove.from, event.detail.aiMove.to, 'ai');
+            } else {
+                // Just the player's move
+                addMoveToHistory(event.detail.from, event.detail.to, 'player');
+            }
             
-            // Send the move to the backend
-            sendMoveToBackend(from, to);
-        };
+            // Update button states
+            updateButtonStates();
+        });
+        
+        document.addEventListener('moveFailed', (event) => {
+            console.log('Move failed event received:', event.detail);
+            showNotification(event.detail.message || 'Invalid move!');
+        });
+        
+        document.addEventListener('moveError', (event) => {
+            console.error('Move error event received:', event.detail);
+            showNotification('Error processing move. Please try again.');
+        });
+        
+        document.addEventListener('gameEnded', (event) => {
+            console.log('Game ended event received:', event.detail);
+            gameActive = false;
+            updateGameStatus(event.detail.message || `Game over. ${event.detail.winner === 'player' ? 'You won!' : event.detail.winner === 'ai' ? 'AI won!' : 'Game drawn!'}`);
+        });
+        
+        // Event for checking if game is active
+        document.addEventListener('checkGameActive', (event) => {
+            console.log('Check game active event received');
+            if (event.detail && typeof event.detail.callback === 'function') {
+                event.detail.callback(gameActive, currentPlayer);
+            }
+        });
+        
+        // Loading events
+        document.addEventListener('showLoading', (event) => {
+            console.log('Show loading event received:', event.detail);
+            showLoading(event.detail?.message || 'Processing...');
+        });
+        
+        document.addEventListener('hideLoading', () => {
+            console.log('Hide loading event received');
+            hideLoading();
+        });
     }
 
     function startNewGame() {
@@ -111,102 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(error => {
             console.error('Error starting new game:', error);
             showNotification('Failed to start a new game. Please try again.');
-            hideLoading();
-        });
-    }
-
-    function sendMoveToBackend(from, to) {
-        showLoading('Processing move...');
-        
-        fetch('/move', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ from, to })
-        })
-        .then(response => response.json())
-        .then(data => {
-            // Update current player from backend response
-            if (data.currentPlayer) {
-                currentPlayer = data.currentPlayer;
-                console.log("Current player updated to:", currentPlayer);
-            }
-            
-            if (data.valid) {
-                // Update move history from server response
-                if (data.moves && Array.isArray(data.moves)) {
-                    // Clear existing move history display
-                    moveHistory.innerHTML = '';
-                    moveStack = data.moves;
-                    
-                    // Regenerate the move history display
-                    let moveCounter = 1;
-                    for (let i = 0; i < data.moves.length; i += 2) {
-                        const whiteMove = data.moves[i];
-                        const blackMove = i + 1 < data.moves.length ? data.moves[i + 1] : null;
-                        
-                        const moveRow = document.createElement('div');
-                        moveRow.style.display = 'contents';
-                        
-                        const moveNumber = document.createElement('div');
-                        moveNumber.textContent = `${moveCounter}.`;
-                        moveNumber.className = 'move-number';
-                        
-                        const whiteMoveDiv = document.createElement('div');
-                        whiteMoveDiv.textContent = `${whiteMove.from}-${whiteMove.to}`;
-                        
-                        const blackMoveDiv = document.createElement('div');
-                        if (blackMove) {
-                            blackMoveDiv.textContent = `${blackMove.from}-${blackMove.to}`;
-                        }
-                        
-                        moveRow.appendChild(moveNumber);
-                        moveRow.appendChild(whiteMoveDiv);
-                        moveRow.appendChild(blackMoveDiv);
-                        
-                        moveHistory.appendChild(moveRow);
-                        moveCounter++;
-                    }
-                    
-                    // Scroll to bottom
-                    moveHistory.scrollTop = moveHistory.scrollHeight;
-                }
-                
-                // If the game is still active and AI made a move
-                if (data.gameState === 'active' && data.aiMove) {
-                    // Highlight the AI's move
-                    chessboard.lastMove = { 
-                        from: data.aiMove.from, 
-                        to: data.aiMove.to 
-                    };
-                    chessboard.highlightLastMove();
-                }
-                
-                // Update the board with the new state
-                updateBoardFromBackend(data.board);
-                
-                // Check game state
-                if (data.gameState === 'ended') {
-                    gameActive = false;
-                    updateGameStatus(data.message || `Game over. ${data.winner === 'player' ? 'You won!' : 'AI won!'}`);
-                }
-            } else {
-                // Invalid move
-                showNotification(data.message || 'Invalid move!');
-                
-                // Update the board to revert the invalid move
-                updateBoardFromBackend(data.board);
-            }
-            
-            // Update button states
-            updateButtonStates();
-            
-            hideLoading();
-        })
-        .catch(error => {
-            console.error('Error sending move:', error);
-            showNotification('Failed to process move. Please try again.');
             hideLoading();
         });
     }
