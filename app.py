@@ -323,6 +323,7 @@ def make_move():
                 return jsonify({'error': 'Invalid AI move format', 'valid': False}), 500
                 
             # Update position with AI's move
+            ai_move = (ai_from_coord, ai_to_coord)
             current_position = current_position.move(ai_move)
             current_player = 'white'
             
