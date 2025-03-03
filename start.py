@@ -33,11 +33,12 @@ def print_menu():
     """Print the main menu."""
     print("AVAILABLE COMMANDS:\n")
     print("1. Start the application (run Flask server)")
-    print("2. Run all tests (Python backend and JavaScript frontend)")
-    print("3. View help information")
-    print("4. Configure server settings")
-    print("5. Run troubleshooting tool")
-    print("6. Exit")
+    print("2. Start persistent server (more stable, auto-restart)")
+    print("3. Run all tests (Python backend and JavaScript frontend)")
+    print("4. View help information")
+    print("5. Configure server settings")
+    print("6. Run troubleshooting tool")
+    print("7. Exit")
     print("\n" + "-" * 80 + "\n")
 
 def get_current_config():
@@ -127,6 +128,69 @@ def start_application():
     except KeyboardInterrupt:
         print("\nServer stopped.")
 
+def start_persistent_server():
+    """Start the persistent server with auto-restart capabilities."""
+    clear_screen()
+    print_header()
+    print("Starting the persistent server...\n")
+    
+    # Get current settings
+    port, host, debug = get_current_config()
+    
+    print(f"Starting persistent server on {host}:{port} with auto-restart capabilities...")
+    print("This server is more stable and will automatically recover from crashes.")
+    print("The server will continue running in this terminal window.")
+    print("Press Ctrl+C to stop the server when you're done.\n")
+    
+    # Function to open browser after a short delay
+    def open_browser():
+        url = f'http://localhost:{port}'
+        webbrowser.open(url)
+        print(f"Web browser opened to {url}")
+    
+    # Open browser after 1.5 seconds
+    Timer(1.5, open_browser).start()
+    
+    # Clear problematic environment variables
+    env_vars_to_clear = ["PYTHONHOME", "PYTHONPATH", "PYTHONSTARTUP", "PYTHONUSERBASE", "PYTHONEXECUTABLE"]
+    env = os.environ.copy()
+    for var in env_vars_to_clear:
+        if var in env:
+            del env[var]
+    
+    # Set environment variables for the server
+    env['PORT'] = str(port)
+    env['HOST'] = host
+    env['DEBUG'] = str(debug).lower()
+    
+    # Check if the wrapper script exists
+    if os.path.exists("start_server.sh") and os.access("start_server.sh", os.X_OK):
+        try:
+            subprocess.run(["./start_server.sh", f"--port={port}", f"--host={host}"] + 
+                            (["--debug"] if debug else []))
+        except KeyboardInterrupt:
+            print("\nServer stopped.")
+    else:
+        # Direct approach if wrapper script is not available
+        persistent_server_script = "run_persistent_server.py"
+        if os.path.exists(persistent_server_script):
+            try:
+                if os.path.exists("venv") and os.path.isfile("venv/bin/python"):
+                    python_path = "venv/bin/python"
+                else:
+                    python_path = "python3"
+                    
+                subprocess.run([python_path, persistent_server_script, 
+                                f"--port={port}", f"--host={host}"] + 
+                                (["--debug"] if debug else []),
+                                env=env)
+            except KeyboardInterrupt:
+                print("\nServer stopped.")
+        else:
+            print(f"Error: Could not find persistent server script at {persistent_server_script}")
+            print("Please make sure you have the persistent server files installed.")
+            input("\nPress Enter to return to the main menu...")
+
 def run_tests():
     """Run all tests for the application."""
     clear_screen()
@@ -170,19 +234,21 @@ def main():
         print_header()
         print_menu()
         
-        choice = input("Enter your choice (1-6): ")
+        choice = input("Enter your choice (1-7): ")
         
         if choice == '1':
             start_application()
         elif choice == '2':
-            run_tests()
+            start_persistent_server()
         elif choice == '3':
-            show_help()
+            run_tests()
         elif choice == '4':
-            configure_settings()
+            show_help()
         elif choice == '5':
-            run_troubleshooting()
+            configure_settings()
         elif choice == '6':
+            run_troubleshooting()
+        elif choice == '7':
             clear_screen()
             print_header()
             print("Exiting Genetic Chess Engine. Goodbye!\n")

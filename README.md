@@ -38,6 +38,15 @@ chmod +x start.py
 python3 start.py
 ```
 
+The start menu gives you options to:
+1. Start the application (standard Flask server)
+2. Start persistent server (stable version with auto-restart capability)
+3. Run all tests
+4. View help information
+5. Configure server settings
+6. Run troubleshooting tool
+7. Exit
+
 Alternatively, you can use our recommended run script which handles environment issues:
 
 ```bash
@@ -48,11 +57,27 @@ chmod +x run.sh
 ./run.sh
 ```
 
-This gives you options to:
-1. Start the application
-2. Run all tests
-3. View help information
-4. Exit
+## Persistent Server
+
+The application includes a persistent server option that provides enhanced stability and reliability:
+
+```bash
+# Method 1: Using the menu option in start.py (recommended)
+./start.py
+# Then select option 2
+
+# Method 2: Using the dedicated script directly
+./start_server.sh
+```
+
+Benefits of the persistent server:
+- Automatically restarts if it crashes
+- Monitors server health continuously
+- Handles Python environment issues
+- Uses Gunicorn if available (for better performance)
+- Comprehensive logging for troubleshooting
+
+For detailed information about the persistent server, see [README_PERSISTENT_SERVER.md](README_PERSISTENT_SERVER.md).
 
 ## Usage
 

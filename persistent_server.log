@@ -1,0 +1,134 @@
+2025-03-03 02:57:20,139 - INFO - Starting Persistent Server for Genetic Chess Engine
+2025-03-03 02:57:20,139 - INFO - Configuration: host=127.0.0.1, port=5001, debug=False
+2025-03-03 02:57:20,265 - INFO - Starting server with Gunicorn on 127.0.0.1:5001 (debug=False)
+2025-03-03 02:57:20,265 - INFO - Server started with PID 94545
+2025-03-03 02:57:20,266 - INFO - Waiting for server to start...
+2025-03-03 02:57:20,387 - INFO - [SERVER] [2025-03-03 02:57:20 -0800] [94545] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:20,387 - INFO - [SERVER] [2025-03-03 02:57:20 -0800] [94545] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:21,270 - INFO - Server is up and running!
+2025-03-03 02:57:21,270 - INFO - Starting server monitoring (interval=5s, max_restarts=10)
+2025-03-03 02:57:21,388 - INFO - [SERVER] [2025-03-03 02:57:21 -0800] [94545] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:21,388 - INFO - [SERVER] [2025-03-03 02:57:21 -0800] [94545] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:22,388 - INFO - [SERVER] [2025-03-03 02:57:22 -0800] [94545] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:22,388 - INFO - [SERVER] [2025-03-03 02:57:22 -0800] [94545] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:23,388 - INFO - [SERVER] [2025-03-03 02:57:23 -0800] [94545] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:23,389 - INFO - [SERVER] [2025-03-03 02:57:23 -0800] [94545] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:24,389 - INFO - [SERVER] [2025-03-03 02:57:24 -0800] [94545] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:24,389 - INFO - [SERVER] [2025-03-03 02:57:24 -0800] [94545] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:25,389 - INFO - [SERVER] [2025-03-03 02:57:25 -0800] [94545] [ERROR] Can't connect to ('127.0.0.1', 5001)
+2025-03-03 02:57:26,273 - WARNING - Server process has terminated (exit code: 1)
+2025-03-03 02:57:26,274 - WARNING - Attempting to restart server (attempt 1/10)
+2025-03-03 02:57:27,388 - INFO - Starting server with Gunicorn on 127.0.0.1:5001 (debug=False)
+2025-03-03 02:57:27,389 - INFO - Server started with PID 94632
+2025-03-03 02:57:27,389 - INFO - Waiting for server to start...
+2025-03-03 02:57:27,503 - INFO - [SERVER] [2025-03-03 02:57:27 -0800] [94632] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:27,503 - INFO - [SERVER] [2025-03-03 02:57:27 -0800] [94632] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:28,392 - INFO - Server is up and running!
+2025-03-03 02:57:28,392 - INFO - Server restarted successfully
+2025-03-03 02:57:28,503 - INFO - [SERVER] [2025-03-03 02:57:28 -0800] [94632] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:28,504 - INFO - [SERVER] [2025-03-03 02:57:28 -0800] [94632] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:29,504 - INFO - [SERVER] [2025-03-03 02:57:29 -0800] [94632] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:29,505 - INFO - [SERVER] [2025-03-03 02:57:29 -0800] [94632] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:30,505 - INFO - [SERVER] [2025-03-03 02:57:30 -0800] [94632] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:30,506 - INFO - [SERVER] [2025-03-03 02:57:30 -0800] [94632] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:31,506 - INFO - [SERVER] [2025-03-03 02:57:31 -0800] [94632] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:31,507 - INFO - [SERVER] [2025-03-03 02:57:31 -0800] [94632] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:32,507 - INFO - [SERVER] [2025-03-03 02:57:32 -0800] [94632] [ERROR] Can't connect to ('127.0.0.1', 5001)
+2025-03-03 02:57:33,393 - WARNING - Server process has terminated (exit code: 1)
+2025-03-03 02:57:33,393 - WARNING - Attempting to restart server (attempt 2/10)
+2025-03-03 02:57:34,505 - INFO - Starting server with Gunicorn on 127.0.0.1:5001 (debug=False)
+2025-03-03 02:57:34,506 - INFO - Server started with PID 94701
+2025-03-03 02:57:34,506 - INFO - Waiting for server to start...
+2025-03-03 02:57:34,630 - INFO - [SERVER] [2025-03-03 02:57:34 -0800] [94701] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:34,631 - INFO - [SERVER] [2025-03-03 02:57:34 -0800] [94701] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:35,513 - INFO - Server is up and running!
+2025-03-03 02:57:35,513 - INFO - Server restarted successfully
+2025-03-03 02:57:35,631 - INFO - [SERVER] [2025-03-03 02:57:35 -0800] [94701] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:35,631 - INFO - [SERVER] [2025-03-03 02:57:35 -0800] [94701] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:36,632 - INFO - [SERVER] [2025-03-03 02:57:36 -0800] [94701] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:36,632 - INFO - [SERVER] [2025-03-03 02:57:36 -0800] [94701] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:37,633 - INFO - [SERVER] [2025-03-03 02:57:37 -0800] [94701] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:37,634 - INFO - [SERVER] [2025-03-03 02:57:37 -0800] [94701] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:38,634 - INFO - [SERVER] [2025-03-03 02:57:38 -0800] [94701] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:38,634 - INFO - [SERVER] [2025-03-03 02:57:38 -0800] [94701] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:39,636 - INFO - [SERVER] [2025-03-03 02:57:39 -0800] [94701] [ERROR] Can't connect to ('127.0.0.1', 5001)
+2025-03-03 02:57:40,514 - WARNING - Server process has terminated (exit code: 1)
+2025-03-03 02:57:40,514 - WARNING - Attempting to restart server (attempt 3/10)
+2025-03-03 02:57:41,654 - INFO - Starting server with Gunicorn on 127.0.0.1:5001 (debug=False)
+2025-03-03 02:57:41,655 - INFO - Server started with PID 94821
+2025-03-03 02:57:41,656 - INFO - Waiting for server to start...
+2025-03-03 02:57:41,778 - INFO - [SERVER] [2025-03-03 02:57:41 -0800] [94821] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:41,778 - INFO - [SERVER] [2025-03-03 02:57:41 -0800] [94821] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:42,665 - INFO - Server is up and running!
+2025-03-03 02:57:42,665 - INFO - Server restarted successfully
+2025-03-03 02:57:42,779 - INFO - [SERVER] [2025-03-03 02:57:42 -0800] [94821] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:42,779 - INFO - [SERVER] [2025-03-03 02:57:42 -0800] [94821] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:43,779 - INFO - [SERVER] [2025-03-03 02:57:43 -0800] [94821] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:43,779 - INFO - [SERVER] [2025-03-03 02:57:43 -0800] [94821] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:44,780 - INFO - [SERVER] [2025-03-03 02:57:44 -0800] [94821] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:44,781 - INFO - [SERVER] [2025-03-03 02:57:44 -0800] [94821] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:45,781 - INFO - [SERVER] [2025-03-03 02:57:45 -0800] [94821] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:45,782 - INFO - [SERVER] [2025-03-03 02:57:45 -0800] [94821] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:46,782 - INFO - [SERVER] [2025-03-03 02:57:46 -0800] [94821] [ERROR] Can't connect to ('127.0.0.1', 5001)
+2025-03-03 02:57:47,666 - WARNING - Server process has terminated (exit code: 1)
+2025-03-03 02:57:47,667 - WARNING - Attempting to restart server (attempt 4/10)
+2025-03-03 02:57:48,820 - INFO - Starting server with Gunicorn on 127.0.0.1:5001 (debug=False)
+2025-03-03 02:57:48,820 - INFO - Server started with PID 94922
+2025-03-03 02:57:48,821 - INFO - Waiting for server to start...
+2025-03-03 02:57:48,941 - INFO - [SERVER] [2025-03-03 02:57:48 -0800] [94922] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:48,941 - INFO - [SERVER] [2025-03-03 02:57:48 -0800] [94922] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:49,828 - INFO - Server is up and running!
+2025-03-03 02:57:49,829 - INFO - Server restarted successfully
+2025-03-03 02:57:49,942 - INFO - [SERVER] [2025-03-03 02:57:49 -0800] [94922] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:49,942 - INFO - [SERVER] [2025-03-03 02:57:49 -0800] [94922] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:50,942 - INFO - [SERVER] [2025-03-03 02:57:50 -0800] [94922] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:50,942 - INFO - [SERVER] [2025-03-03 02:57:50 -0800] [94922] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:51,942 - INFO - [SERVER] [2025-03-03 02:57:51 -0800] [94922] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:51,942 - INFO - [SERVER] [2025-03-03 02:57:51 -0800] [94922] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:52,943 - INFO - [SERVER] [2025-03-03 02:57:52 -0800] [94922] [ERROR] Connection in use: ('127.0.0.1', 5001)
+2025-03-03 02:57:52,943 - INFO - [SERVER] [2025-03-03 02:57:52 -0800] [94922] [ERROR] connection to ('127.0.0.1', 5001) failed: [Errno 98] Address already in use
+2025-03-03 02:57:53,944 - INFO - [SERVER] [2025-03-03 02:57:53 -0800] [94922] [ERROR] Can't connect to ('127.0.0.1', 5001)
+2025-03-03 02:57:54,829 - WARNING - Server process has terminated (exit code: 1)
+2025-03-03 02:57:54,830 - WARNING - Attempting to restart server (attempt 5/10)
+2025-03-03 02:57:56,009 - INFO - Starting server with Gunicorn on 127.0.0.1:5001 (debug=False)
+2025-03-03 02:57:56,010 - INFO - Server started with PID 95016
+2025-03-03 02:57:56,010 - INFO - Waiting for server to start...
+2025-03-03 02:57:57,029 - INFO - Server is up and running!
+2025-03-03 02:57:57,029 - INFO - Server restarted successfully
+2025-03-03 02:57:57,029 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:02:57:57 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 02:58:02,032 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:02:58:02 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 02:58:05,703 - INFO - Received signal 2, shutting down...
+2025-03-03 02:58:05,704 - INFO - Terminating server process (PID: 95016)
+2025-03-03 02:58:05,969 - INFO - Server process terminated gracefully
+2025-03-03 02:58:05,969 - INFO - Shutdown complete
+2025-03-03 03:02:42,480 - INFO - Starting Persistent Server for Genetic Chess Engine
+2025-03-03 03:02:42,480 - INFO - Configuration: host=0.0.0.0, port=5000, debug=False
+2025-03-03 03:02:42,612 - INFO - Starting server with Gunicorn on 0.0.0.0:5000 (debug=False)
+2025-03-03 03:02:42,613 - INFO - Server started with PID 95418
+2025-03-03 03:02:42,613 - INFO - Waiting for server to start...
+2025-03-03 03:02:42,740 - INFO - [SERVER] [2025-03-03 03:02:42 -0800] [95418] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:02:42,740 - INFO - [SERVER] [2025-03-03 03:02:42 -0800] [95418] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:02:43,621 - INFO - Server is up and running!
+2025-03-03 03:02:43,621 - INFO - Starting server monitoring (interval=5s, max_restarts=10)
+2025-03-03 03:02:43,741 - INFO - [SERVER] [2025-03-03 03:02:43 -0800] [95418] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:02:43,742 - INFO - [SERVER] [2025-03-03 03:02:43 -0800] [95418] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:02:44,742 - INFO - [SERVER] [2025-03-03 03:02:44 -0800] [95418] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:02:44,742 - INFO - [SERVER] [2025-03-03 03:02:44 -0800] [95418] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:02:45,743 - INFO - [SERVER] [2025-03-03 03:02:45 -0800] [95418] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:02:45,743 - INFO - [SERVER] [2025-03-03 03:02:45 -0800] [95418] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:02:46,743 - INFO - [SERVER] [2025-03-03 03:02:46 -0800] [95418] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:02:46,744 - INFO - [SERVER] [2025-03-03 03:02:46 -0800] [95418] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:02:47,744 - INFO - [SERVER] [2025-03-03 03:02:47 -0800] [95418] [ERROR] Can't connect to ('0.0.0.0', 5000)
+2025-03-03 03:02:48,624 - WARNING - Server process has terminated (exit code: 1)
+2025-03-03 03:02:48,624 - WARNING - Attempting to restart server (attempt 1/10)
+2025-03-03 03:02:49,815 - INFO - Starting server with Gunicorn on 0.0.0.0:5000 (debug=False)
+2025-03-03 03:02:49,816 - INFO - Server started with PID 95590
+2025-03-03 03:02:49,816 - INFO - Waiting for server to start...
+2025-03-03 03:02:49,970 - INFO - [SERVER] [2025-03-03 03:02:49 -0800] [95590] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:02:49,970 - INFO - [SERVER] [2025-03-03 03:02:49 -0800] [95590] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:02:50,822 - INFO - Server is up and running!
+2025-03-03 03:02:50,822 - INFO - Server restarted successfully
+2025-03-03 03:02:50,970 - INFO - [SERVER] [2025-03-03 03:02:50 -0800] [95590] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:02:50,970 - INFO - [SERVER] [2025-03-03 03:02:50 -0800] [95590] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
+2025-03-03 03:02:51,970 - INFO - [SERVER] [2025-03-03 03:02:51 -0800] [95590] [ERROR] Connection in use: ('0.0.0.0', 5000)
+2025-03-03 03:02:51,971 - INFO - [SERVER] [2025-03-03 03:02:51 -0800] [95590] [ERROR] connection to ('0.0.0.0', 5000) failed: [Errno 98] Address already in use
