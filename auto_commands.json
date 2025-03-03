@@ -1,0 +1,16 @@
+{
+  "auto_approve_commands": {
+    "comments": "Commands listed here will be executed without requiring user approval",
+    "patterns": [
+      "python -m pytest",
+      "python test_*.py",
+      "python run_tests.py",
+      "python app.py",
+      "python start.py",
+      "python run.py",
+      "python -m unittest",
+      "python -m vitest"
+    ]
+  },
+  "version": "1.0.0"
+} 

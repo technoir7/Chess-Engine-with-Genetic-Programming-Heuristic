@@ -176,3 +176,33 @@ genetic_chess_engine/
 ## License
 
 MIT License
+
+## Auto-Command Approval
+
+The project includes an auto-command approval system that allows specific commands to be executed automatically in the development environment without requiring manual approval:
+
+1. All test commands are automatically approved for convenience during development
+2. Common Python commands for running the application are also pre-approved
+
+The auto-approval system is configured in `auto_commands.json` in the root directory. You can modify this file to add or remove commands that should be automatically approved.
+
+To test if a command would be auto-approved, run:
+```bash
+python auto_approve.py
+```
+
+### Currently Auto-Approved Commands
+
+The following command patterns are automatically approved:
+- `python -m pytest`
+- `python test_*.py`
+- `python run_tests.py`
+- `python app.py`
+- `python start.py`
+- `python run.py`
+- `python -m unittest`
+- `python -m vitest`
+
+### Adding New Auto-Approved Commands
+
+To add new commands to the auto-approval list, edit the `auto_commands.json` file and add your command pattern to the `patterns` array.
