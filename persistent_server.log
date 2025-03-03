@@ -380,3 +380,11 @@
 2025-03-03 04:16:31,844 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:31 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
 2025-03-03 04:16:36,851 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:36 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
 2025-03-03 04:16:41,855 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:41 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:46,858 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:46 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:51,861 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:51 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:16:56,864 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:16:56 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:17:01,867 - INFO - [SERVER] 127.0.0.1 - - [03/Mar/2025:04:17:01 -0800] "GET / HTTP/1.1" 200 5027 "-" "python-requests/2.32.3"
+2025-03-03 04:17:02,123 - INFO - Received signal 2, shutting down...
+2025-03-03 04:17:02,123 - INFO - Terminating server process (PID: 103881)
+2025-03-03 04:17:02,388 - INFO - Server process terminated gracefully
+2025-03-03 04:17:02,388 - INFO - Shutdown complete
