@@ -1,0 +1,84 @@
+Starting Genetic Chess Engine on 0.0.0.0:5000 (debug=False)
+Use the following environment variables to customize:
+  - PORT: Change the port (default: 5000)
+  - HOST: Change the host (default: 0.0.0.0)
+  - DEBUG: Enable debug mode (default: False)
+
+Open your browser to http://localhost:5000/
+Press Ctrl+C to stop the server
+ * Serving Flask app 'app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.94:5000
+Press CTRL+C to quit
+127.0.0.1 - - [03/Mar/2025 01:01:30] "GET / HTTP/1.1" 200 -
+Initial board state:
+a1: black rook
+b1: black knight
+c1: black bishop
+d1: black queen
+e1: black king
+f1: black bishop
+g1: black knight
+h1: black rook
+a2: black pawn
+b2: black pawn
+c2: black pawn
+d2: black pawn
+e2: black pawn
+f2: black pawn
+g2: black pawn
+h2: black pawn
+a7: white pawn
+b7: white pawn
+c7: white pawn
+d7: white pawn
+e7: white pawn
+f7: white pawn
+g7: white pawn
+h7: white pawn
+a8: white rook
+b8: white knight
+c8: white bishop
+d8: white queen
+e8: white king
+f8: white bishop
+g8: white knight
+h8: white rook
+127.0.0.1 - - [03/Mar/2025 01:01:30] "POST /initialize HTTP/1.1" 200 -
+Initial board state:
+a1: black rook
+b1: black knight
+c1: black bishop
+d1: black queen
+e1: black king
+f1: black bishop
+g1: black knight
+h1: black rook
+a2: black pawn
+b2: black pawn
+c2: black pawn
+d2: black pawn
+e2: black pawn
+f2: black pawn
+g2: black pawn
+h2: black pawn
+a7: white pawn
+b7: white pawn
+c7: white pawn
+d7: white pawn
+e7: white pawn
+f7: white pawn
+g7: white pawn
+h7: white pawn
+a8: white rook
+b8: white knight
+c8: white bishop
+d8: white queen
+e8: white king
+f8: white bishop
+g8: white knight
+h8: white rook
+127.0.0.1 - - [03/Mar/2025 01:02:43] "POST /initialize HTTP/1.1" 200 -

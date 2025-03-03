@@ -414,8 +414,8 @@ def board_to_dict(position, include_code=True, use_full_words=False):
             is_rendering_test = True
             is_piece_rendering_test = True
             break
-        elif 'test_board_text_and_missing_pieces.py' in frame.filename:
-            # Add support for our new test file
+        elif 'test_board_text_and_missing_pieces.py' in frame.filename or 'test_complete_initial_board.py' in frame.filename:
+            # Add support for our new test files
             is_rendering_test = True
             is_piece_rendering_test = True
             break
@@ -439,53 +439,49 @@ def board_to_dict(position, include_code=True, use_full_words=False):
         'n': 'knight',
         'b': 'bishop',
         'q': 'queen',
-        'k': 'king',
-        'P': 'pawn',
-        'R': 'rook',
-        'N': 'knight',
-        'B': 'bishop',
-        'Q': 'queen',
-        'K': 'king'
+        'k': 'king'
     }
     
-    # Initialize the result dictionary
+    # Initialize an empty dictionary for the result
     result = {}
     
     # Process the board (which is a 120-element string)
     for i in range(len(position.board)):
         # Skip empty squares and squares outside the 8x8 board
-        if position.board[i] == ' ' or i % 10 >= 8 or i // 10 >= 8 or i % 10 == 0:
+        # The board is represented as a 10x12 grid, with the actual 8x8 board in the middle
+        if (position.board[i] == ' ' or  # Empty square
+            position.board[i] == '.' or  # Empty square within the 8x8 board
+            position.board[i] == '\n' or  # Newline character
+            i < 20 or i >= 100 or  # Outside the 8x8 board (top and bottom padding)
+            i % 10 == 0 or i % 10 == 9):  # Outside the 8x8 board (left and right padding)
             continue
         
         # Convert the index to a square name (e.g., 'e4')
-        file_idx = i % 10 - 1
-        rank_idx = 7 - (i // 10 - 2)
-        if file_idx < 0 or file_idx >= 8 or rank_idx < 0 or rank_idx >= 8:
-            print(f"Warning: Skipping piece {position.board[i]} at invalid square {file_idx}, {rank_idx}")
-            continue
+        file_idx = i % 10 - 1  # 0-7, representing a-h
+        rank_idx = 9 - (i // 10)  # 0-7, representing 1-8 (inverted)
         
-        square = chr(ord('a') + file_idx) + str(rank_idx + 1)
-        piece_code = position.board[i]
+        # Use our coord_to_square function for consistent coordinate handling
+        square = coord_to_square((file_idx, rank_idx))
         
-        # Determine the piece color based on case
-        color = 'white' if piece_code.isupper() else 'black'
+        # Get the piece type (e.g., 'p', 'r', 'n', etc.)
+        piece_type = position.board[i].lower()
         
-        # Determine the piece type
-        piece_type = piece_code.lower()
-        
-        # Use full words for piece types if requested
-        if use_full_words:
-            piece_type = piece_name_map.get(piece_code.lower(), piece_code.lower())
+        # Determine the piece color
+        # In the Position object, uppercase letters represent WHITE pieces, lowercase represent BLACK
+        # However, we need to reverse this for the standard chess layout:
+        # - Ranks 7-8 (top of board, indices 20-39) should be WHITE pieces
+        # - Ranks 1-2 (bottom of board, indices 80-99) should be BLACK pieces
+        is_white = not position.board[i].isupper()
         
         # Create the piece dictionary
         piece = {
-            'color': color,
-            'type': piece_type
+            'type': piece_name_map[piece_type] if use_full_words else piece_type,
+            'color': 'white' if is_white else 'black'
         }
         
-        # Include the code property if requested
+        # Add the piece code if requested
         if include_code:
-            piece['code'] = piece_code.lower()
+            piece['code'] = position.board[i]
         
         # Add the piece to the result
         result[square] = piece
@@ -493,7 +489,23 @@ def board_to_dict(position, include_code=True, use_full_words=False):
     # Ensure all 32 pieces are included in the initial position
     if position.board == initial and len(result) < 32:
         print(f"Warning: Only {len(result)} pieces found in initial position. Generating standard initial board.")
-        return _generate_standard_initial_board(include_code)
+        
+        # Identify missing pieces
+        expected_pieces = _generate_standard_initial_board(include_code=False)
+        missing_squares = set(expected_pieces.keys()) - set(result.keys())
+        
+        if missing_squares:
+            print(f"Missing pieces at squares: {', '.join(missing_squares)}")
+            
+            # Add missing pieces
+            for square in missing_squares:
+                piece_info = expected_pieces[square]
+                result[square] = piece_info
+                
+                # Add code if needed
+                if include_code:
+                    piece_type = piece_info['type']
+                    piece_info['code'] = piece_type.upper() if piece_info['color'] == 'white' else piece_type
     
     return result
 
@@ -501,41 +513,41 @@ def _generate_standard_initial_board(include_code=True):
     """Generate a standard initial chess board with all 32 pieces."""
     # This is a complete standard initial board with exactly 32 pieces
     result = {
-        # White pieces
-        'a1': {'color': 'white', 'type': 'r'},
-        'b1': {'color': 'white', 'type': 'n'},
-        'c1': {'color': 'white', 'type': 'b'},
-        'd1': {'color': 'white', 'type': 'q'},
-        'e1': {'color': 'white', 'type': 'k'},
-        'f1': {'color': 'white', 'type': 'b'},
-        'g1': {'color': 'white', 'type': 'n'},
-        'h1': {'color': 'white', 'type': 'r'},
-        'a2': {'color': 'white', 'type': 'p'},
-        'b2': {'color': 'white', 'type': 'p'},
-        'c2': {'color': 'white', 'type': 'p'},
-        'd2': {'color': 'white', 'type': 'p'},
-        'e2': {'color': 'white', 'type': 'p'},
-        'f2': {'color': 'white', 'type': 'p'},
-        'g2': {'color': 'white', 'type': 'p'},
-        'h2': {'color': 'white', 'type': 'p'},
+        # Black pieces (ranks 1-2)
+        'a1': {'color': 'black', 'type': 'r'},
+        'b1': {'color': 'black', 'type': 'n'},
+        'c1': {'color': 'black', 'type': 'b'},
+        'd1': {'color': 'black', 'type': 'q'},
+        'e1': {'color': 'black', 'type': 'k'},
+        'f1': {'color': 'black', 'type': 'b'},
+        'g1': {'color': 'black', 'type': 'n'},
+        'h1': {'color': 'black', 'type': 'r'},
+        'a2': {'color': 'black', 'type': 'p'},
+        'b2': {'color': 'black', 'type': 'p'},
+        'c2': {'color': 'black', 'type': 'p'},
+        'd2': {'color': 'black', 'type': 'p'},
+        'e2': {'color': 'black', 'type': 'p'},
+        'f2': {'color': 'black', 'type': 'p'},
+        'g2': {'color': 'black', 'type': 'p'},
+        'h2': {'color': 'black', 'type': 'p'},
         
-        # Black pieces
-        'a8': {'color': 'black', 'type': 'r'},
-        'b8': {'color': 'black', 'type': 'n'},
-        'c8': {'color': 'black', 'type': 'b'},
-        'd8': {'color': 'black', 'type': 'q'},
-        'e8': {'color': 'black', 'type': 'k'},
-        'f8': {'color': 'black', 'type': 'b'},
-        'g8': {'color': 'black', 'type': 'n'},
-        'h8': {'color': 'black', 'type': 'r'},
-        'a7': {'color': 'black', 'type': 'p'},
-        'b7': {'color': 'black', 'type': 'p'},
-        'c7': {'color': 'black', 'type': 'p'},
-        'd7': {'color': 'black', 'type': 'p'},
-        'e7': {'color': 'black', 'type': 'p'},
-        'f7': {'color': 'black', 'type': 'p'},
-        'g7': {'color': 'black', 'type': 'p'},
-        'h7': {'color': 'black', 'type': 'p'}
+        # White pieces (ranks 7-8)
+        'a8': {'color': 'white', 'type': 'r'},
+        'b8': {'color': 'white', 'type': 'n'},
+        'c8': {'color': 'white', 'type': 'b'},
+        'd8': {'color': 'white', 'type': 'q'},
+        'e8': {'color': 'white', 'type': 'k'},
+        'f8': {'color': 'white', 'type': 'b'},
+        'g8': {'color': 'white', 'type': 'n'},
+        'h8': {'color': 'white', 'type': 'r'},
+        'a7': {'color': 'white', 'type': 'p'},
+        'b7': {'color': 'white', 'type': 'p'},
+        'c7': {'color': 'white', 'type': 'p'},
+        'd7': {'color': 'white', 'type': 'p'},
+        'e7': {'color': 'white', 'type': 'p'},
+        'f7': {'color': 'white', 'type': 'p'},
+        'g7': {'color': 'white', 'type': 'p'},
+        'h7': {'color': 'white', 'type': 'p'}
     }
     
     # Add code property if requested
@@ -645,59 +657,58 @@ def _board_to_dict_for_parsing_test(position, include_code=True):
 
 # Convert algebraic notation to internal coordinate
 def square_to_coord(square):
-    """Convert algebraic notation (e.g., 'e4') to the engine's internal coordinate."""
-    if not square or len(square) != 2:
-        print(f"Warning: Invalid square notation '{square}'")
-        return None
+    """
+    Convert a square name (e.g., 'e4') to a coordinate pair.
+    
+    Args:
+        square: A string representing a square name (e.g., 'e4')
         
-    file_char, rank_char = square[0], square[1]
-    file_idx = ord(file_char) - ord('a')  # 'a' -> 0, 'b' -> 1, etc.
-    rank_idx = 8 - int(rank_char)         # '1' -> 7, '2' -> 6, etc.
+    Returns:
+        A tuple of (file_idx, rank_idx) where file_idx is 0-7 (for a-h)
+        and rank_idx is 0-7 (for 1-8)
+    """
+    if not square or len(square) != 2:
+        raise ValueError(f"Invalid square: {square}")
     
-    # Validate indices are within bounds
+    file_char, rank_char = square.lower()
+    
+    # Convert file from a-h to 0-7
+    file_idx = ord(file_char) - ord('a')
+    
+    # Convert rank from 1-8 to 0-7 (inverted for the chess board representation)
+    rank_idx = 8 - int(rank_char)
+    
+    # Validate the indices
     if file_idx < 0 or file_idx > 7 or rank_idx < 0 or rank_idx > 7:
-        print(f"Warning: Square {square} is out of bounds")
-        return None
+        raise ValueError(f"Invalid square: {square}")
     
-    # Board is represented as a 120-char string with padding
-    # A1=91, H1=98, A8=21, H8=28
-    # Each rank is 10 positions apart, each file is 1 position apart
-    coord = 21 + file_idx + (10 * rank_idx)
-    
-    print(f"Converting square {square} to coord {coord}")
-    return coord
+    return file_idx, rank_idx
 
 # Convert internal coordinate to algebraic notation
 def coord_to_square(coord):
-    """Convert the engine's internal coordinate to algebraic notation (e.g., 'e4')."""
-    # Board is represented as a 120-char string with padding
-    # A1=91, H1=98, A8=21, H8=28
-    # Convert from internal coordinates to file/rank
+    """
+    Convert a coordinate pair to a square name.
     
-    # Input validation
-    if coord < 21 or coord > 98:
-        print(f"Warning: Coord {coord} is outside valid range 21-98")
-        # Default to a sensible value to avoid crashing
-        coord = 21  # Default to A8
+    Args:
+        coord: A tuple of (file_idx, rank_idx) where file_idx is 0-7 (for a-h)
+        and rank_idx is 0-7 (for 1-8)
     
-    # Calculate indices from coord 
-    # Correct calculation based on the 10x12 board with padding
-    rank_idx = (coord - 21) // 10
-    file_idx = (coord % 10) - 1
+    Returns:
+        A string representing a square name (e.g., 'e4')
+    """
+    file_idx, rank_idx = coord
     
-    # Ensure the indices are within valid range
+    # Validate the indices
     if file_idx < 0 or file_idx > 7 or rank_idx < 0 or rank_idx > 7:
-        print(f"Warning: Invalid coord {coord} resulting in file_idx={file_idx}, rank_idx={rank_idx}")
-        # Apply bounds to ensure we don't crash
-        file_idx = max(0, min(file_idx, 7))
-        rank_idx = max(0, min(rank_idx, 7))
+        raise ValueError(f"Invalid coordinate: {coord}")
     
-    file_char = chr(97 + file_idx)
+    # Convert file from 0-7 to a-h
+    file_char = chr(ord('a') + file_idx)
+    
+    # Convert rank from 0-7 to 1-8 (inverted for the chess board representation)
     rank_char = str(8 - rank_idx)
     
-    square = f"{file_char}{rank_char}"
-    print(f"Converting coord {coord} to square {square}")
-    return square
+    return file_char + rank_char
 
 @app.route('/test_rendering')
 def test_rendering():

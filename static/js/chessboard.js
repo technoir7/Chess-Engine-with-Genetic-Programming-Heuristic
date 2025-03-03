@@ -398,62 +398,42 @@ class ChessBoard {
                 'h2': { type: 'p', color: 'white' }
             };
             
-            let missingPieces = [];
-            
-            // Ensure all critical pieces are in the board state
-            for (const square in criticalPieces) {
-                if (!boardStateCopy[square]) {
-                    missingPieces.push(`${criticalPieces[square].color} ${criticalPieces[square].type} at ${square}`);
-                    console.warn(`Critical piece missing at ${square}, adding it back`);
-                    boardStateCopy[square] = criticalPieces[square];
+            // Check for specific missing pieces and add them if needed
+            for (const squareId in criticalPieces) {
+                if (!boardStateCopy[squareId]) {
+                    console.warn(`Adding missing piece at ${squareId}: ${criticalPieces[squareId].color} ${criticalPieces[squareId].type}`);
+                    boardStateCopy[squareId] = criticalPieces[squareId];
+                    
+                    // Add code property if any existing piece has it
+                    const anyPiece = Object.values(boardStateCopy)[0];
+                    if (anyPiece && 'code' in anyPiece) {
+                        const pieceType = criticalPieces[squareId].type;
+                        boardStateCopy[squareId].code = criticalPieces[squareId].color === 'white' ? 
+                            pieceType.toUpperCase() : pieceType;
+                    }
                 }
             }
-            
-            if (missingPieces.length > 0) {
-                console.warn(`Added missing pieces: ${missingPieces.join(', ')}`);
-            }
         }
-        
-        // Count pieces by color for debugging
-        let whitePieces = 0;
-        let blackPieces = 0;
-        
-        // Place pieces according to the new state
-        let piecesPlaced = 0;
-        for (const squareId in boardStateCopy) {
-            const pieceData = boardStateCopy[squareId];
-            
-            // Validate piece data
-            if (!pieceData || !pieceData.type || !pieceData.color) {
-                console.error(`Invalid piece data at ${squareId}:`, pieceData);
-                continue;
-            }
-            
-            // Count by color for debugging
-            if (pieceData.color === 'white') {
-                whitePieces++;
-            } else if (pieceData.color === 'black') {
-                blackPieces++;
-            }
-            
-            console.log(`Placing ${pieceData.color} ${pieceData.type} on ${squareId}`);
-            this.placePiece(squareId, pieceData.type, pieceData.color);
-            piecesPlaced++;
-        }
-        
-        console.log(`Placed ${piecesPlaced} pieces on the board (${whitePieces} white, ${blackPieces} black)`);
-        
-        // Store the board state
+
+        // Update our internal boardState
         this.boardState = boardStateCopy;
-        this.legalMoves = legalMoves;
         
-        // Highlight legal moves if a square is selected
-        if (this.selectedSquare) {
-            this.highlightLegalMoves();
+        // Place pieces on the board
+        for (const squareId in boardStateCopy) {
+            const piece = boardStateCopy[squareId];
+            this.placePiece(squareId, piece.type, piece.color);
         }
+        
+        // Update legal moves
+        this.legalMoves = legalMoves || [];
         
         // Highlight the last move
         this.highlightLastMove();
+        
+        // If a square is selected, highlight legal moves from that square
+        if (this.selectedSquare) {
+            this.highlightLegalMoves();
+        }
     }
 
     /**

@@ -13,6 +13,11 @@ from threading import Timer
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 JS_TEST_PATH = os.path.join(BASE_DIR, 'static', 'js', 'tests', 'test.html')
 
+# Add parent directory to path so we can import modules
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+from test.test_complete_initial_board import CompleteInitialBoardTest
+
 def run_python_tests():
     """Run the Python unit tests for the backend."""
     print("Running Python backend tests...\n")
@@ -55,6 +60,16 @@ if __name__ == "__main__":
     # Run JavaScript tests after 1 second
     Timer(1.0, open_js_tests).start()
     
+    # Create test suite
+    test_suite = unittest.TestSuite()
+    
+    # Add our test classes
+    test_suite.addTest(unittest.makeSuite(CompleteInitialBoardTest))
+    
+    # Run the tests
+    runner = unittest.TextTestRunner(verbosity=2)
+    result = runner.run(test_suite)
+    
     # Return appropriate exit code for CI/CD systems
     if not python_success:
         print("\nSome Python tests failed!")
@@ -62,4 +77,4 @@ if __name__ == "__main__":
     else:
         print("\nAll Python tests passed!")
         # We don't know the result of JS tests since they run in the browser
-        sys.exit(0) 
+        sys.exit(not result.wasSuccessful()) 
