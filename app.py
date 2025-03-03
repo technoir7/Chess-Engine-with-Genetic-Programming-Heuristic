@@ -162,9 +162,17 @@ def board_to_dict(position):
             if piece != '.':
                 # Convert to algebraic notation (a1, b2, etc.)
                 square = f"{chr(97 + file_idx)}{8 - rank_idx}"
-                color = 'white' if piece.isupper() else 'black'
+                # Map the piece character to its color
+                if piece.isupper():
+                    color = 'white'
+                else:
+                    color = 'black'
+                
+                # Map piece char to piece type for frontend
+                piece_type = piece.lower()
+                
                 board_dict[square] = {
-                    'type': piece.lower(),
+                    'type': piece_type,
                     'color': color
                 }
     
@@ -185,18 +193,31 @@ def board_to_dict(position):
 
 # Convert algebraic notation to internal coordinate
 def square_to_coord(square):
+    """Convert algebraic notation (e.g., 'e4') to the engine's internal coordinate."""
     file_char, rank_char = square[0], square[1]
-    file_idx = ord(file_char) - ord('a')
-    rank_idx = 8 - int(rank_char)
-    coord = file_idx + (rank_idx << 4)
+    file_idx = ord(file_char) - ord('a')  # 'a' -> 0, 'b' -> 1, etc.
+    rank_idx = 8 - int(rank_char)         # '1' -> 7, '2' -> 6, etc.
+    
+    # Board is represented as a 120-char string with padding
+    # A1=91, H1=98, A8=21, H8=28
+    # Each rank is 10 positions apart, each file is 1 position apart
+    coord = 21 + file_idx + (10 * rank_idx)
+    
     print(f"Converting square {square} to coord {coord}")
     return coord
 
 # Convert internal coordinate to algebraic notation
 def coord_to_square(coord):
-    file_idx = coord & 7
-    rank_idx = coord >> 4
-    square = f"{chr(97 + file_idx)}{8 - rank_idx}"
+    """Convert the engine's internal coordinate to algebraic notation (e.g., 'e4')."""
+    # Board is represented as a 120-char string with padding
+    # A1=91, H1=98, A8=21, H8=28
+    file_idx = (coord % 10) - 1  # Subtract 1 because each row starts with a space
+    rank_idx = (coord - 21) // 10
+    
+    file_char = chr(97 + file_idx)
+    rank_char = str(8 - rank_idx)
+    
+    square = f"{file_char}{rank_char}"
     print(f"Converting coord {coord} to square {square}")
     return square
 
