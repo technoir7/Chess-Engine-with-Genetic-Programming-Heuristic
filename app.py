@@ -150,13 +150,18 @@ def make_move():
 # Helper function to convert board to dictionary representation for the frontend
 def board_to_dict(position):
     board_dict = {}
-    for i in range(120):
-        if i & 0x88 == 0:  # Check if it's a valid square
-            file_idx = i & 7
-            rank_idx = i >> 4
-            square = f"{chr(97 + file_idx)}{8 - rank_idx}"
-            piece = position.board[i]
+    # The board is represented as a string with newlines, split it into rows
+    rows = position.board.split('\n')
+    # Skip the first two and last two rows (padding)
+    board_rows = rows[2:10]
+    
+    for rank_idx, row in enumerate(board_rows):
+        # Skip the first space character
+        row = row[1:]
+        for file_idx, piece in enumerate(row):
             if piece != '.':
+                # Convert to algebraic notation (a1, b2, etc.)
+                square = f"{chr(97 + file_idx)}{8 - rank_idx}"
                 color = 'white' if piece.isupper() else 'black'
                 board_dict[square] = {
                     'type': piece.lower(),
