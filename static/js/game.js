@@ -134,14 +134,47 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             if (data.valid) {
-                // Add the move to history
-                addMoveToHistory(from, to, 'player');
+                // Update move history from server response
+                if (data.moves && Array.isArray(data.moves)) {
+                    // Clear existing move history display
+                    moveHistory.innerHTML = '';
+                    moveStack = data.moves;
+                    
+                    // Regenerate the move history display
+                    let moveCounter = 1;
+                    for (let i = 0; i < data.moves.length; i += 2) {
+                        const whiteMove = data.moves[i];
+                        const blackMove = i + 1 < data.moves.length ? data.moves[i + 1] : null;
+                        
+                        const moveRow = document.createElement('div');
+                        moveRow.style.display = 'contents';
+                        
+                        const moveNumber = document.createElement('div');
+                        moveNumber.textContent = `${moveCounter}.`;
+                        moveNumber.className = 'move-number';
+                        
+                        const whiteMoveDiv = document.createElement('div');
+                        whiteMoveDiv.textContent = `${whiteMove.from}-${whiteMove.to}`;
+                        
+                        const blackMoveDiv = document.createElement('div');
+                        if (blackMove) {
+                            blackMoveDiv.textContent = `${blackMove.from}-${blackMove.to}`;
+                        }
+                        
+                        moveRow.appendChild(moveNumber);
+                        moveRow.appendChild(whiteMoveDiv);
+                        moveRow.appendChild(blackMoveDiv);
+                        
+                        moveHistory.appendChild(moveRow);
+                        moveCounter++;
+                    }
+                    
+                    // Scroll to bottom
+                    moveHistory.scrollTop = moveHistory.scrollHeight;
+                }
                 
                 // If the game is still active and AI made a move
                 if (data.gameState === 'active' && data.aiMove) {
-                    // Add AI's move to history
-                    addMoveToHistory(data.aiMove.from, data.aiMove.to, 'ai');
-                    
                     // Highlight the AI's move
                     chessboard.lastMove = { 
                         from: data.aiMove.from, 

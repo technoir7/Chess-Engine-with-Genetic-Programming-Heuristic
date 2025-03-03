@@ -229,7 +229,21 @@ def make_move():
 
 # Helper function to convert move history to frontend format
 def format_moves_for_frontend(moves):
-    return moves
+    # Ensure we have a valid list of moves
+    if not moves or not isinstance(moves, list):
+        return []
+    
+    # Ensure all moves have the required fields
+    formatted_moves = []
+    for move in moves:
+        if isinstance(move, dict) and 'from' in move and 'to' in move and 'player' in move:
+            formatted_moves.append({
+                'from': move['from'],
+                'to': move['to'],
+                'player': move['player']
+            })
+    
+    return formatted_moves
 
 # Helper function to convert board to dictionary representation for the frontend
 def board_to_dict(position):

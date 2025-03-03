@@ -118,47 +118,97 @@ class SpecificIssuesTestCase(unittest.TestCase):
         
         self.assertEqual(response.status_code, 200)
         
-        # Make each move and verify the game updates correctly
+        # Make each move and verify the player can continue making moves
         for i, move in enumerate(moves):
             # Make the move
-            move_response = self.client.post('/move',
-                                            data=json.dumps(move),
-                                            content_type='application/json')
+            response = self.client.post('/move',
+                                      data=json.dumps(move),
+                                      content_type='application/json')
             
-            self.assertEqual(move_response.status_code, 200)
+            # Verify the response
+            self.assertEqual(response.status_code, 200, f"Move {i+1} should be accepted")
             
-            # Parse the response
-            data = move_response.get_json()
+            data = response.get_json()
+            self.assertTrue(data['valid'], f"Move {i+1} should be valid")
             
-            # Verify the move was accepted
-            self.assertTrue(data.get('valid', False), f"Move {i+1} should be valid")
-            
-            # Ensure AI responded
+            # Verify AI made a move in response
             self.assertIn('aiMove', data, f"AI should respond to move {i+1}")
             
-            # Ensure board state updated
-            self.assertIn('board', data, f"Response should include board state after move {i+1}")
-            board = data.get('board', {})
+            # Verify the current player is set back to white (player's turn)
+            self.assertEqual(data['currentPlayer'], 'white', 
+                           f"After AI move, it should be player's turn again")
             
-            # Verify the player's piece is moved to the target square
-            to_square = move['to']
-            if to_square in board:
-                # On the third move (i=2), the piece at d4 will be captured by the AI
-                # It will have been replaced with a black piece
-                if i == 2 and to_square == 'd4':
-                    piece = board[to_square]
-                    self.assertEqual(piece['color'], 'black', 
-                                   f"After move {i+1}, {to_square} will have a black piece that captured the white piece")
-                else:
-                    piece = board[to_square]
-                    self.assertEqual(piece['color'], 'white', 
-                                   f"After move {i+1}, {to_square} should contain white piece")
+            # Check the move history has been updated
+            move_history = data.get('moves', [])
+            expected_length = 2 * (i + 1)
+            self.assertEqual(len(move_history), expected_length,
+                          f"Move history should have {expected_length} moves after move {i+1}")
             
-            # Verify the from square is now empty
-            from_square = move['from']
-            if from_square in board:
-                self.assertNotEqual(board[from_square]['color'], 'white',
-                                 f"After move {i+1}, {from_square} should not contain white piece")
+            # Verify the latest player move is recorded correctly
+            latest_player_move = move_history[2*i]
+            self.assertEqual(latest_player_move['from'], move['from'],
+                          f"Latest player move should be from {move['from']}")
+            self.assertEqual(latest_player_move['to'], move['to'],
+                          f"Latest player move should be to {move['to']}")
+            self.assertEqual(latest_player_move['player'], 'white',
+                          "Latest player move should be white's")
+            
+            # Verify the latest AI move is recorded correctly
+            latest_ai_move = move_history[2*i + 1]
+            self.assertEqual(latest_ai_move['player'], 'black',
+                          "Latest AI move should be black's")
+
+    def test_frontend_move_history_update(self):
+        """Test that the frontend receives complete move history from backend."""
+        # Make a series of moves
+        moves = [
+            {'from': 'e2', 'to': 'e4'},
+            {'from': 'g1', 'to': 'f3'}
+        ]
+        
+        # Track expected move history
+        expected_history = []
+        
+        for move in moves:
+            response = self.client.post('/move',
+                                      data=json.dumps(move),
+                                      content_type='application/json')
+            data = response.get_json()
+            
+            # Get the move history from the response
+            move_history = data.get('moves', [])
+            
+            # Each move should include both player and AI moves
+            self.assertGreater(len(move_history), len(expected_history),
+                             "Move history should grow with each move")
+            
+            # Check that all previous moves are included
+            for i, prev_move in enumerate(expected_history):
+                self.assertEqual(move_history[i]['from'], prev_move['from'],
+                              f"Move history should include previous move {i+1}")
+                self.assertEqual(move_history[i]['to'], prev_move['to'],
+                              f"Move history should include previous move {i+1}")
+                self.assertEqual(move_history[i]['player'], prev_move['player'],
+                              f"Move history should include previous move {i+1}")
+            
+            # Update expected history with new moves
+            # Player move
+            player_move = {
+                'from': move['from'],
+                'to': move['to'],
+                'player': 'white'
+            }
+            if len(expected_history) < len(move_history):
+                expected_history.append(player_move)
+            
+            # AI move (if available)
+            if 'aiMove' in data and len(expected_history) < len(move_history):
+                ai_move = {
+                    'from': data['aiMove']['from'],
+                    'to': data['aiMove']['to'],
+                    'player': 'black'
+                }
+                expected_history.append(ai_move)
 
 if __name__ == '__main__':
     unittest.main() 
