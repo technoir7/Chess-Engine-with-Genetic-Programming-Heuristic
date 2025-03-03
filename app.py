@@ -305,13 +305,35 @@ def make_move():
             })
         
         # Make AI move
-        search_result = searcher.search(new_position, secs=1.5)
+        search_result = None
+        try:
+            search_result = searcher.search(new_position, secs=1.5)
+        except Exception as e:
+            print(f"Error calling search method: {e}")
+            import traceback
+            traceback.print_exc()
         
-        # The search result is a tuple (move, score) where move is itself a tuple (from_coord, to_coord)
-        if isinstance(search_result, tuple) and len(search_result) == 2:
-            ai_move, ai_score = search_result
-        else:
-            ai_move = search_result
+        ai_move = None
+        ai_score = None
+        
+        # Try to extract the move and score from the search result
+        if search_result:
+            # The search result is a tuple (move, score) where move is itself a tuple (from_coord, to_coord)
+            if isinstance(search_result, tuple) and len(search_result) == 2:
+                ai_move, ai_score = search_result
+            else:
+                # Handle the case where search_result is not a tuple (move, score)
+                # It might be that search_result is just the move without the score
+                ai_move = search_result
+                ai_score = None
+        
+        # If we still don't have a valid move, generate one
+        if not ai_move or not isinstance(ai_move, tuple) or len(ai_move) != 2:
+            print("Generating fallback move for AI")
+            valid_moves = list(new_position.gen_moves())
+            if valid_moves:
+                ai_move = valid_moves[0]  # Take the first valid move as a fallback
+                ai_score = 0
         
         if ai_move:
             # Handle case where ai_move is a tuple (from_coord, to_coord)

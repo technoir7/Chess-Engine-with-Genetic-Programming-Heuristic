@@ -215,6 +215,59 @@ class Minimax:
         return score
 
     def search(self, pos, secs):
-        move = self.solution(pos)
-        return move
+        """
+        Search for the best move in the given position.
+        
+        Args:
+            pos: A Position object representing the current board state
+            secs: Time limit for the search in seconds (not used in this implementation)
+            
+        Returns:
+            A tuple (move, score) where:
+            - move is a tuple (from_coord, to_coord)
+            - score is the evaluation score of the move
+        """
+        try:
+            # Call solution to get the move and score
+            result = self.solution(pos)
+            
+            # Verify result is in the expected format (move, score)
+            if isinstance(result, tuple) and len(result) == 2:
+                move, score = result
+                
+                # Verify that move is a tuple (from_coord, to_coord)
+                if isinstance(move, tuple) and len(move) == 2:
+                    return result  # The result is already in the correct format
+                else:
+                    print(f"Warning: solution returned a move in unexpected format: {move}")
+                    # Try to generate a valid move
+                    valid_moves = list(pos.gen_moves())
+                    if valid_moves:
+                        return valid_moves[0], score
+                    else:
+                        print("Error: No valid moves available")
+                        return None, -9999
+            else:
+                print(f"Warning: solution returned unexpected result format: {result}")
+                # Try to generate a valid move
+                valid_moves = list(pos.gen_moves())
+                if valid_moves:
+                    # Return the first valid move with a neutral score
+                    return valid_moves[0], 0
+                else:
+                    print("Error: No valid moves available")
+                    return None, -9999
+                
+        except Exception as e:
+            print(f"Error in search method: {e}")
+            # In case of any error, try to generate a valid move
+            try:
+                valid_moves = list(pos.gen_moves())
+                if valid_moves:
+                    # Return the first valid move with a neutral score
+                    return valid_moves[0], 0
+                else:
+                    return None, -9999
+            except:
+                return None, -9999
         
