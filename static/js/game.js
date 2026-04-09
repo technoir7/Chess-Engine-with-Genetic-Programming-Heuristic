@@ -134,7 +134,14 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(response => response.json())
         .then(data => {
             // Update the chessboard with the initial position
-            updateBoardFromBackend(data.board);
+            updateBoardFromBackend(data.board, data.legalMoves || []);
+
+            document.dispatchEvent(new CustomEvent('gameInitialized', {
+                detail: {
+                    board: data.board,
+                    legalMoves: data.legalMoves || []
+                }
+            }));
             
             // Update game status
             updateGameStatus(data.message);
@@ -157,18 +164,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function updateBoardFromBackend(boardState) {
+    function updateBoardFromBackend(boardState, legalMoves = []) {
         // Log the received board state
         console.log("Received board state from backend:", boardState);
         
         // Convert backend board representation to frontend format
         // and update the chessboard
-        chessboard.updateBoard(boardState);
+        chessboard.updateBoard(boardState, legalMoves);
         
-        // Generate legal moves from the current position
-        const legalMoves = generateLegalMoves(boardState);
-        console.log(`Generated ${legalMoves.length} legal moves`);
-        chessboard.legalMoves = legalMoves;
+        // Fall back to client-side move generation only when the server
+        // doesn't provide legal moves in its response.
+        if (!Array.isArray(legalMoves) || legalMoves.length === 0) {
+            const generatedLegalMoves = generateLegalMoves(boardState);
+            console.log(`Generated ${generatedLegalMoves.length} legal moves`);
+            chessboard.legalMoves = generatedLegalMoves;
+        }
     }
 
     function generateLegalMoves(boardState) {

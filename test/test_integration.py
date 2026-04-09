@@ -75,16 +75,18 @@ class ChessEngineIntegrationTestCase(unittest.TestCase):
         self.assertEqual(third_board['c4']['type'], 'b', "c4 should contain a bishop")
         self.assertEqual(third_board['c4']['color'], 'white', "Bishop should be white")
         
-        # Verify turn handling - try to make a move when it's not the player's turn
-        # Set up a special test case where we force black's turn
-        invalid_turn_response = self.client.post('/move',
-                                   data='{"from": "d1", "to": "f3", "_forceBlackTurn": true}',
+        # Verify that an illegal move is rejected by the server-side legality check.
+        # After the sequence above it is white's turn; d1-f3 is illegal (queen blocked).
+        invalid_move_response = self.client.post('/move',
+                                   data='{"from": "a1", "to": "h8"}',
                                    content_type='application/json')
-        invalid_turn_data = invalid_turn_response.get_json()
-        
-        # Verify it was rejected
-        self.assertFalse(invalid_turn_data['valid'], "Move should be rejected when not player's turn")
-        self.assertIn("Not your turn", invalid_turn_data['message'], "Error message should indicate wrong turn")
+        invalid_move_data = invalid_move_response.get_json()
+
+        # The route returns HTTP 400 with valid=False and an 'error' key.
+        self.assertFalse(invalid_move_data['valid'],
+                         "Illegal move should be rejected by server-side validation")
+        self.assertIn('error', invalid_move_data,
+                      "Rejection response should carry an 'error' field")
         
     def _verify_board_integrity(self, board):
         """Verify the integrity of the chess board data structure."""

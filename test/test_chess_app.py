@@ -106,22 +106,27 @@ class ChessAppTestCase(unittest.TestCase):
         self.assertIn('board', data)   # Updated board should be returned
 
     def test_make_invalid_move(self):
-        """Test making an invalid move."""
+        """Test making an invalid move.
+
+        The /move route validates moves server-side.  Illegal moves return
+        HTTP 400 with valid=False and an 'error' field (not 'message').
+        The original board is returned in the 'board' field of the response.
+        """
         # First initialize a game
         self.client.post('/initialize',
                         data=json.dumps({'difficulty': 'easy'}),
                         content_type='application/json')
-        
-        # Make an invalid move (a1-h8 rook can't move diagonally)
+
+        # Make an invalid move (rook a1 can't move diagonally to h8)
         response = self.client.post('/move',
                                    data=json.dumps({'from': 'a1', 'to': 'h8'}),
                                    content_type='application/json')
         data = json.loads(response.data)
-        
-        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(response.status_code, 400)
         self.assertFalse(data['valid'])
-        self.assertIn('message', data)  # Should have error message
-        self.assertIn('board', data)    # Original board should be returned
+        self.assertIn('error', data)   # New implementation returns 'error', not 'message'
+        self.assertIn('board', data)   # Original board should be returned
 
 if __name__ == '__main__':
     unittest.main() 

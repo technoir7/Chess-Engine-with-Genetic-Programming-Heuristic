@@ -29,24 +29,23 @@ class TestPieceMovementFix(unittest.TestCase):
         self.app_context.pop()
     
     def test_move_white_pawn(self):
-        """Test that a white pawn can move forward one square."""
-        # Make a valid pawn move from e2 to e3
+        """Test that a white pawn can move forward one square.
+
+        board_to_dict returns single-letter type codes ('p' not 'pawn').
+        """
         move_response = self.client.post('/move',
                                         data=json.dumps({"from": "e2", "to": "e3"}),
                                         content_type='application/json')
         move_data = move_response.get_json()
-        
-        # Verify the move was successful
+
         self.assertTrue(move_data.get('valid', False), "Pawn move should be valid")
-        
-        # Check if the board was updated correctly
+
         board = move_data.get('board', {})
         self.assertIn('e3', board, "Pawn should be moved to e3")
         self.assertNotIn('e2', board, "Pawn should no longer be at e2")
-        
-        # Check that the piece at e3 is a white pawn
+
         piece = board.get('e3', {})
-        self.assertEqual(piece.get('type'), 'pawn', "Piece should be a pawn")
+        self.assertEqual(piece.get('type'), 'p', "Piece type should be 'p' (pawn)")
         self.assertEqual(piece.get('color'), 'white', "Piece should be white")
     
     def test_move_white_pawn_two_squares(self):
@@ -66,24 +65,23 @@ class TestPieceMovementFix(unittest.TestCase):
         self.assertNotIn('e2', board, "Pawn should no longer be at e2")
     
     def test_move_white_knight(self):
-        """Test that a white knight can move in its L-shape pattern."""
-        # Make a valid knight move from g1 to f3
+        """Test that a white knight can move in its L-shape pattern.
+
+        board_to_dict returns single-letter type codes ('n' not 'knight').
+        """
         move_response = self.client.post('/move',
                                         data=json.dumps({"from": "g1", "to": "f3"}),
                                         content_type='application/json')
         move_data = move_response.get_json()
-        
-        # Verify the move was successful
+
         self.assertTrue(move_data.get('valid', False), "Knight move should be valid")
-        
-        # Check if the board was updated correctly
+
         board = move_data.get('board', {})
         self.assertIn('f3', board, "Knight should be moved to f3")
         self.assertNotIn('g1', board, "Knight should no longer be at g1")
-        
-        # Check that the piece at f3 is a white knight
+
         piece = board.get('f3', {})
-        self.assertEqual(piece.get('type'), 'knight', "Piece should be a knight")
+        self.assertEqual(piece.get('type'), 'n', "Piece type should be 'n' (knight)")
         self.assertEqual(piece.get('color'), 'white', "Piece should be white")
     
     def test_move_sequence_multiple_pieces(self):
@@ -115,10 +113,10 @@ class TestPieceMovementFix(unittest.TestCase):
         self.assertIn('f3', board, "Knight should be at f3")
         self.assertIn('c4', board, "Bishop should be at c4")
         
-        # Check that piece types are correct
-        self.assertEqual(board.get('e4', {}).get('type'), 'pawn', "Piece at e4 should be a pawn")
-        self.assertEqual(board.get('f3', {}).get('type'), 'knight', "Piece at f3 should be a knight")
-        self.assertEqual(board.get('c4', {}).get('type'), 'bishop', "Piece at c4 should be a bishop")
+        # board_to_dict uses single-letter codes: 'p'=pawn, 'n'=knight, 'b'=bishop
+        self.assertEqual(board.get('e4', {}).get('type'), 'p', "Piece at e4 should be a pawn (type='p')")
+        self.assertEqual(board.get('f3', {}).get('type'), 'n', "Piece at f3 should be a knight (type='n')")
+        self.assertEqual(board.get('c4', {}).get('type'), 'b', "Piece at c4 should be a bishop (type='b')")
     
     def test_coordinate_conversion(self):
         """Test that coordinate conversion between algebraic and internal works correctly."""

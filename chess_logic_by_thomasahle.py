@@ -79,7 +79,8 @@ for k, table in pst.items():
 
 # Our board is represented as a 120 character string. The padding allows for
 # fast detection of moves that don't stay within the board.
-A1, H1, A8, H8 = 91, 98, 21, 28
+A1, B1, C1, D1, E1, F1, G1, H1 = 91, 92, 93, 94, 95, 96, 97, 98
+A8, E8, H8 = 21, 25, 28
 initial = (
     '         \n'  #   0 -  9
     '         \n'  #  10 - 19
@@ -155,7 +156,63 @@ class Position(namedtuple('Position', 'board score wc bc ep kp')):
                     pieces[item] += 1
         return pieces
 
-    def gen_moves(self):
+    def king_square(self):
+        for i, piece_code in enumerate(self.board):
+            if piece_code == 'K':
+                return i
+        return None
+
+    def is_square_attacked(self, square):
+        """Return True if the given square is attacked by the opposing side."""
+        board = self.board
+
+        # Pawn attacks from the opposing side (lowercase pawns move south).
+        if board[square + N + W] == 'p' or board[square + N + E] == 'p':
+            return True
+
+        # Knight attacks.
+        for d in directions['N']:
+            if board[square - d] == 'n':
+                return True
+
+        # Bishop / queen diagonal attacks.
+        for d in directions['B']:
+            for j in count(square + d, d):
+                q = board[j]
+                if q.isspace():
+                    break
+                if q == '.':
+                    continue
+                if q in ('b', 'q'):
+                    return True
+                break
+
+        # Rook / queen orthogonal attacks.
+        for d in directions['R']:
+            for j in count(square + d, d):
+                q = board[j]
+                if q.isspace():
+                    break
+                if q == '.':
+                    continue
+                if q in ('r', 'q'):
+                    return True
+                break
+
+        # King attacks.
+        for d in directions['K']:
+            if board[square + d] == 'k':
+                return True
+
+        return False
+
+    def is_current_player_in_check(self):
+        king_square = self.king_square()
+        if king_square is None:
+            return False
+        return self.is_square_attacked(king_square)
+
+    def _gen_pseudo_moves(self):
         # For each of our pieces, iterate through each possible 'ray' of moves,
         # as defined in the 'directions' map. The rays are broken e.g. by
         # captures or immediately in case of pieces such as knights.
@@ -174,9 +231,23 @@ class Position(namedtuple('Position', 'board score wc bc ep kp')):
                     yield (i, j)
                     # Stop crawlers from sliding, and sliding after captures
                     if p in 'PNK' or q.islower(): break
-                    # Castling, by sliding the rook next to the king
-                    if i == A1 and self.board[j+E] == 'K' and self.wc[0]: yield (j+E, j+W)
-                    if i == H1 and self.board[j+W] == 'K' and self.wc[1]: yield (j+W, j+E)
+            if p == 'K' and i == E1 and not self.is_current_player_in_check():
+                if self.wc[1]:
+                    if self.board[F1] == '.' and self.board[G1] == '.' and self.board[H1] == 'R':
+                        if not self.is_square_attacked(F1) and not self.is_square_attacked(G1):
+                            yield (E1, G1)
+                if self.wc[0]:
+                    if self.board[D1] == '.' and self.board[C1] == '.' and self.board[B1] == '.' and self.board[A1] == 'R':
+                        if not self.is_square_attacked(D1) and not self.is_square_attacked(C1):
+                            yield (E1, C1)
+
+    def gen_moves(self):
+        for move in self._gen_pseudo_moves():
+            try:
+                if not self.move(move).rotate().is_current_player_in_check():
+                    yield move
+            except Exception:
+                continue
 
     def rotate(self):
         ''' Rotates the board, preserving enpassant '''
@@ -191,14 +262,17 @@ class Position(namedtuple('Position', 'board score wc bc ep kp')):
             self.board[::-1].swapcase(), -self.score,
             self.bc, self.wc, 0, 0)
 
-    def move(self, move):
+    def move(self, move, promotion='Q'):
         i, j = move
         p, q = self.board[i], self.board[j]
         put = lambda board, i, p: board[:i] + p + board[i+1:]
+        promotion = (promotion or 'Q').upper()
+        if promotion not in ('Q', 'R', 'B', 'N'):
+            promotion = 'Q'
         # Copy variables and reset ep and kp
         board = self.board
         wc, bc, ep, kp = self.wc, self.bc, 0, 0
-        score = self.score + self.value(move)
+        score = self.score + self.value(move, promotion)
         # Actual move
         board = put(board, j, board[i])
         board = put(board, i, '.')
@@ -217,7 +291,7 @@ class Position(namedtuple('Position', 'board score wc bc ep kp')):
         # Pawn promotion, double move and en passant capture
         if p == 'P':
             if A8 <= j <= H8:
-                board = put(board, j, 'Q')
+                board = put(board, j, promotion)
             if j - i == 2*N:
                 ep = i + N
             if j - i in (N+W, N+E) and q == '.':
@@ -225,9 +299,12 @@ class Position(namedtuple('Position', 'board score wc bc ep kp')):
         # We rotate the returned position, so it's ready for the next player
         return Position(board, score, wc, bc, ep, kp).rotate()
 
-    def value(self, move):
+    def value(self, move, promotion='Q'):
         i, j = move
         p, q = self.board[i], self.board[j]
+        promotion = (promotion or 'Q').upper()
+        if promotion not in ('Q', 'R', 'B', 'N'):
+            promotion = 'Q'
         # Actual move
         score = pst[p][j] - pst[p][i]
         # Capture
@@ -243,7 +320,7 @@ class Position(namedtuple('Position', 'board score wc bc ep kp')):
         # Special pawn stuff
         if p == 'P':
             if A8 <= j <= H8:
-                score += pst['Q'][j] - pst['P'][j]
+                score += pst[promotion][j] - pst['P'][j]
             if j == self.ep:
                 score += pst['P'][119-(j+S)]
         return score

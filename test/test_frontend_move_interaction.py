@@ -102,47 +102,41 @@ class TestFrontendMoveInteraction(unittest.TestCase):
         self.verify_piece_at_position('e4', 'pawn', 'white')
     
     def test_move_with_direct_position_update(self):
-        """Test updating the position directly and verifying the move works."""
+        """Test that the Position.move() function correctly updates the internal board.
+
+        The /move route requires a valid 'from'/'to' pair; there is no
+        "check_state" shortcut.  This test verifies the Position object's move
+        method directly (without the HTTP layer) and then confirms the board is
+        correctly reflected when read back through board_to_dict.
+        """
         from chess_logic_by_thomasahle import Position
-        
+        from app import board_to_dict
+
         with app.app_context():
-            # Get the current position
             initial_position = app_module.current_position
-            
-            # Get the e2 and e4 coordinates
+
             e2_coord = square_to_coord('e2')
             e4_coord = square_to_coord('e4')
-            
-            # Check if move is legal
+
             legal_moves = list(initial_position.gen_moves())
             move_tuple = (e2_coord, e4_coord)
-            logger.debug(f"Checking if {move_tuple} is in legal moves: {legal_moves}")
-            
-            # Find the e2-e4 move
-            e2e4_exists = False
-            for move in legal_moves:
-                if move[0] == e2_coord and move[1] == e4_coord:
-                    e2e4_exists = True
-                    break
-            
+
+            e2e4_exists = any(m[0] == e2_coord and m[1] == e4_coord for m in legal_moves)
             self.assertTrue(e2e4_exists, "e2-e4 should be a legal move")
-            
-            # Execute the move directly on the position
+
+            # Apply the move directly on the Position object.
+            # Position.move() always rotates the board so the opponent is next.
             new_position = initial_position.move(move_tuple)
             self.assertIsNotNone(new_position, "Move should return a new position")
-            
-            # Update the global current_position
-            app_module.current_position = new_position
-        
-        # Now verify the move through the API
-        move_response = self.client.post('/move', 
-                                       data=json.dumps({"check_state": True}),
-                                       content_type='application/json')
-        move_data = move_response.get_json()
-        
-        # Verify the piece has moved
-        self.assertNotIn('e2', move_data.get('board', {}), "e2 should be empty after move")
-        self.assertIn('e4', move_data.get('board', {}), "e4 should have a piece after move")
+
+            # Rotate back to white's perspective to inspect the resulting board.
+            white_perspective = new_position.rotate()
+
+            board_dict = board_to_dict(white_perspective)
+            self.assertNotIn('e2', board_dict, "e2 should be empty after the move")
+            self.assertIn('e4', board_dict, "e4 should have a piece after the move")
+            self.assertEqual(board_dict['e4']['color'], 'white', "Piece at e4 should be white")
+            self.assertEqual(board_dict['e4']['type'], 'p', "Piece at e4 should be a pawn")
     
     def test_make_move_endpoint(self):
         """Test the /move endpoint with direct debugging of the app state."""

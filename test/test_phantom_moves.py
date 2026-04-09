@@ -115,9 +115,12 @@ class PhantomMovesTestCase(unittest.TestCase):
                                     f"Move history references a piece at {move['to']} that doesn't exist")
     
     def test_no_phantom_pieces(self):
-        """Test that there are no phantom pieces (pieces that don't actually exist) on the board."""
+        """Test that there are no phantom pieces (pieces that don't actually exist) on the board.
+
+        board_to_dict returns single-letter piece types ('p', 'r', 'n', 'b', 'q', 'k')
+        not full English words.  The valid-type assertion is updated accordingly.
+        """
         print("Running test_no_phantom_pieces")
-        # Make a sequence of moves to exercise the engine
         moves = [
             ('e2', 'e4'),
             ('d2', 'd4'),
@@ -127,7 +130,7 @@ class PhantomMovesTestCase(unittest.TestCase):
             ('c1', 'e3'),
             ('e1', 'g1'),  # Castle kingside
         ]
-        
+
         for from_square, to_square in moves:
             print(f"Making move: {from_square}-{to_square}")
             response = self.client.post('/move',
@@ -135,20 +138,18 @@ class PhantomMovesTestCase(unittest.TestCase):
                                      content_type='application/json')
             data = response.get_json()
             print(f"Move response valid: {data.get('valid', False)}")
-            
+
             if data.get('valid', False):
                 board_state = data['board']
-                
-                # Check each piece in the board state to ensure it has a valid type and color
+
                 for square, piece_info in board_state.items():
                     self.assertIn('type', piece_info, f"Piece at {square} should have a 'type'")
                     self.assertIn('color', piece_info, f"Piece at {square} should have a 'color'")
-                    
-                    # Verify the piece type is valid
-                    self.assertIn(piece_info['type'], ['pawn', 'knight', 'bishop', 'rook', 'queen', 'king'],
+
+                    # board_to_dict uses single-letter codes: p r n b q k
+                    self.assertIn(piece_info['type'], ['p', 'r', 'n', 'b', 'q', 'k'],
                                 f"Piece type '{piece_info['type']}' at {square} is not valid")
-                    
-                    # Verify the piece color is valid
+
                     self.assertIn(piece_info['color'], ['white', 'black'],
                                 f"Piece color '{piece_info['color']}' at {square} is not valid")
     
@@ -175,10 +176,11 @@ class PhantomMovesTestCase(unittest.TestCase):
         self.assertEqual(player_moves[0]['from'], 'e2', "The move should be from e2")
         self.assertEqual(player_moves[0]['to'], 'e4', "The move should be to e4")
         
-        # Check that the pawn is actually at e4 and not at e2
+        # Check that the pawn is actually at e4 and not at e2.
+        # board_to_dict uses single-letter type codes ('p' for pawn).
         self.assertNotIn('e2', board_state, "Pawn should no longer be at e2")
         self.assertIn('e4', board_state, "Pawn should now be at e4")
-        self.assertEqual(board_state['e4']['type'], 'pawn', "Piece at e4 should be a pawn")
+        self.assertEqual(board_state['e4']['type'], 'p', "Piece at e4 should be a pawn (type='p')")
         self.assertEqual(board_state['e4']['color'], 'white', "Piece at e4 should be white")
         
         # Get the AI's move from the response

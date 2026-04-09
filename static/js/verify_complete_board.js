@@ -23,101 +23,65 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function verifyCompleteBoard() {
     console.log('Verifying board completeness...');
-    
-    // Critical pieces that should be on a complete board
-    const criticalPieces = {
-        // Black back rank
-        'a8': { type: 'r', color: 'black' },  // Black a-rook
-        'b8': { type: 'n', color: 'black' },  // Black b-knight
-        'c8': { type: 'b', color: 'black' },  // Black c-bishop
-        'd8': { type: 'q', color: 'black' },  // Black d-queen
-        'e8': { type: 'k', color: 'black' },  // Black e-king
-        'f8': { type: 'b', color: 'black' },  // Black f-bishop
-        'g8': { type: 'n', color: 'black' },  // Black g-knight
-        'h8': { type: 'r', color: 'black' },  // Black h-rook
-        
-        // Black pawns
-        'a7': { type: 'p', color: 'black' },
-        'b7': { type: 'p', color: 'black' },
-        'c7': { type: 'p', color: 'black' },
-        'd7': { type: 'p', color: 'black' },
-        'e7': { type: 'p', color: 'black' },
-        'f7': { type: 'p', color: 'black' },
-        'g7': { type: 'p', color: 'black' },
-        'h7': { type: 'p', color: 'black' },
-        
-        // White back rank
-        'a1': { type: 'r', color: 'white' },
-        'b1': { type: 'n', color: 'white' },
-        'c1': { type: 'b', color: 'white' },
-        'd1': { type: 'q', color: 'white' },
-        'e1': { type: 'k', color: 'white' },
-        'f1': { type: 'b', color: 'white' },
-        'g1': { type: 'n', color: 'white' },
-        'h1': { type: 'r', color: 'white' },
-        
-        // White pawns
-        'a2': { type: 'p', color: 'white' },
-        'b2': { type: 'p', color: 'white' },
-        'c2': { type: 'p', color: 'white' },
-        'd2': { type: 'p', color: 'white' },
-        'e2': { type: 'p', color: 'white' },
-        'f2': { type: 'p', color: 'white' },
-        'g2': { type: 'p', color: 'white' },
-        'h2': { type: 'p', color: 'white' }
-    };
-    
-    // Check each square on the board
+
+    const boardState = window.__currentBoardState || {};
+    const expectedSquares = Object.keys(boardState);
     let missingPieces = [];
     let presentPieces = [];
-    
-    // Function to check if a DOM element has a piece image
-    const hasPieceImage = (square) => {
-        return square && 
-               square.querySelector('img') !== null && 
-               square.querySelector('img').src.includes('/pieces/');
+
+    const pieceName = (type) => {
+        if (type === 'n') return 'knight';
+        if (type === 'r') return 'rook';
+        if (type === 'b') return 'bishop';
+        if (type === 'q') return 'queen';
+        if (type === 'k') return 'king';
+        return 'pawn';
     };
-    
-    // Check each critical square
-    for (const squareId in criticalPieces) {
+
+    const getSquareImage = (squareId) => {
         const square = document.getElementById(squareId);
-        if (!square) {
-            console.error(`Square ${squareId} not found in DOM`);
+        return square ? square.querySelector('img') : null;
+    };
+
+    if (expectedSquares.length === 0) {
+        console.error('No board state available for verification');
+        missingPieces.push('Current board state unavailable');
+    }
+
+    for (const squareId of expectedSquares) {
+        const expectedPiece = boardState[squareId];
+        const img = getSquareImage(squareId);
+        const expectedImage = `/${expectedPiece.color}-${pieceName(expectedPiece.type)}.svg`;
+
+        if (!img) {
+            missingPieces.push(`${expectedPiece.color} ${expectedPiece.type} at ${squareId}`);
             continue;
         }
-        
-        const expectedPiece = criticalPieces[squareId];
-        
-        // Check if the square has a piece
-        if (hasPieceImage(square)) {
-            const img = square.querySelector('img');
-            const imgSrc = img.src;
-            
-            // Verify it's the right piece type and color
-            const correctType = imgSrc.includes(`/${expectedPiece.color}-${expectedPiece.type === 'n' ? 'knight' : 
-                                                expectedPiece.type === 'r' ? 'rook' : 
-                                                expectedPiece.type === 'b' ? 'bishop' : 
-                                                expectedPiece.type === 'q' ? 'queen' : 
-                                                expectedPiece.type === 'k' ? 'king' : 'pawn'}.svg`);
-            
-            if (correctType) {
-                presentPieces.push(`${expectedPiece.color} ${expectedPiece.type} at ${squareId}`);
-            } else {
-                missingPieces.push(`${expectedPiece.color} ${expectedPiece.type} at ${squareId} (wrong piece type/color)`);
-            }
+
+        if (img.src.includes(expectedImage)) {
+            presentPieces.push(`${expectedPiece.color} ${expectedPiece.type} at ${squareId}`);
         } else {
-            missingPieces.push(`${expectedPiece.color} ${expectedPiece.type} at ${squareId}`);
+            missingPieces.push(`${expectedPiece.color} ${expectedPiece.type} at ${squareId} (rendered as ${img.src.split('/').pop()})`);
         }
     }
+
+    const renderedSquares = Array.from(document.querySelectorAll('#chessboard .square'))
+        .filter(square => square.querySelector('img'))
+        .map(square => square.id);
+
+    const unexpectedSquares = renderedSquares.filter(squareId => !(squareId in boardState));
+    unexpectedSquares.forEach(squareId => {
+        missingPieces.push(`unexpected rendered piece at ${squareId}`);
+    });
     
     // Report results
-    console.log(`Board verification: ${presentPieces.length} pieces present, ${missingPieces.length} pieces missing`);
+    console.log(`Board verification: ${presentPieces.length} pieces present, ${missingPieces.length} issues found`);
     
     if (missingPieces.length > 0) {
         console.error('MISSING PIECES:');
         missingPieces.forEach(piece => console.error(`- ${piece}`));
     } else {
-        console.log('SUCCESS! All 32 pieces are present and correctly positioned.');
+        console.log(`SUCCESS! All ${presentPieces.length} rendered pieces match the current board state.`);
     }
     
     // Create a notification on the page
@@ -133,9 +97,9 @@ function verifyCompleteBoard() {
     notification.style.maxWidth = '300px';
     
     if (missingPieces.length > 0) {
-        notification.innerHTML = `<strong>Board Verification Failed</strong><br>Missing ${missingPieces.length} pieces.<br>Check console for details.`;
+        notification.innerHTML = `<strong>Board Verification Failed</strong><br>Found ${missingPieces.length} mismatches.<br>Check console for details.`;
     } else {
-        notification.innerHTML = `<strong>Board Verification Successful</strong><br>All 32 pieces present.`;
+        notification.innerHTML = `<strong>Board Verification Successful</strong><br>All ${presentPieces.length} pieces match state.`;
     }
     
     document.body.appendChild(notification);

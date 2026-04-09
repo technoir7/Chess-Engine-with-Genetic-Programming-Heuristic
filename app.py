@@ -2,145 +2,33 @@ from flask import Flask, render_template, request, jsonify, session
 import json
 import os
 import re
-from chess_logic_by_thomasahle import Position, initial, MATE_LOWER, MATE_UPPER
+from chess_logic_by_thomasahle import Position, initial, MATE_LOWER, MATE_UPPER, N, E, S, W, A8, H8
 from minimax import Minimax
 from genetic_programming import evolve, tournament, makerandomtree
 import inspect
 
 # Move our utils functions directly into app.py to avoid circular imports
 def is_king_in_check(position, side='black'):
-    """
-    Determine if the king of the specified side is in check.
-    
-    Args:
-        position: A Position object
-        side: 'white' or 'black' - which king to check
-    
-    Returns:
-        bool: True if the king is in check, False otherwise
-    """
-    # If checking black king, we need to rotate the position
-    # This is because the gen_moves function generates moves for the upper case pieces (white)
     if side == 'black':
         position = position.rotate()
-    
-    # Find the king's position
-    king_square = None
-    for i, piece in enumerate(position.board):
-        if piece == 'K':  # Look for white king
-            king_square = i
-            break
-    
-    if king_square is None:
-        return False  # No king found
-    
-    # Rotate to check opponent's moves
-    rotated_pos = position.rotate()
-    
-    # Check if any of the opponent's moves can capture the king
-    for i, j in rotated_pos.gen_moves():
-        if j == 119 - king_square:  # The opponent can capture our king
-            return True
-    
-    return False
+    return position.is_current_player_in_check()
 
 def is_checkmate(position, side='white'):
-    """
-    Determine if the specified side is in checkmate.
-    
-    Args:
-        position: A Position object
-        side: 'white' or 'black' - which side to check for checkmate
-    
-    Returns:
-        bool: True if the side is in checkmate, False otherwise
-    """
-    # If checking black, we need to rotate
     if side == 'black':
         position = position.rotate()
-    
-    # First check if the king is in check
-    if not is_king_in_check(position):
-        return False  # Not in check, so not checkmate
-    
-    # Now check if there are any legal moves that can get out of check
-    # In a valid chess position, if there are no moves and the king is in check, it's checkmate
-    moves = list(position.gen_moves())
-    if not moves:
-        return True  # No moves and in check = checkmate
-    
-    # For each move, check if it gets us out of check
-    for move in moves:
-        new_pos = position.move(move)
-        # After move, it's opponent's turn, so we need to check if they can capture our king
-        if not is_king_in_check(new_pos.rotate(), 'black'):
-            return False  # Found at least one move that gets out of check
-    
-    # If no move gets us out of check, it's checkmate
-    return True
+    return position.is_current_player_in_check() and not any(position.gen_moves())
 
 def is_stalemate(position, side='white'):
-    """
-    Determine if the specified side is in stalemate.
-    
-    Args:
-        position: A Position object
-        side: 'white' or 'black' - which side to check for stalemate
-    
-    Returns:
-        bool: True if the side is in stalemate, False otherwise
-    """
-    # If checking black, we need to rotate
     if side == 'black':
         position = position.rotate()
-    
-    # First check if the king is in check
-    if is_king_in_check(position):
-        return False  # In check, so not stalemate
-    
-    # Now check if there are any legal moves
-    # In a valid chess position, if there are no moves and the king is not in check, it's stalemate
-    moves = list(position.gen_moves())
-    if not moves:
-        return True  # No moves and not in check = stalemate
-    
-    return False  # Has moves, so not stalemate
+    return not position.is_current_player_in_check() and not any(position.gen_moves())
 
 def check_game_result():
-    """
-    Check if the game has ended due to checkmate, stalemate, or other conditions.
-    
-    Returns:
-        str or None: A string describing the result if the game has ended, or None if it's still ongoing.
-    """
     global current_position, current_player
-    
     if not current_position:
         return None
-    
-    # Check for checkmate
-    if is_checkmate(current_position, current_player):
-        winner = 'black' if current_player == 'white' else 'white'
-        return f"Checkmate! {winner.capitalize()} wins"
-    
-    # Check for stalemate
-    if is_stalemate(current_position, current_player):
-        return "Stalemate! The game is a draw"
-    
-    # Check for insufficient material (simplified check)
-    # This is a basic implementation - you would need a more complete check for tournament rules
-    piece_count = {}
-    for char in current_position.board:
-        if char not in ['.', ' ', '\n']:
-            if char not in piece_count:
-                piece_count[char] = 0
-            piece_count[char] += 1
-    
-    # If only kings are left, it's a draw
-    if sum(piece_count.values()) <= 2:
-        return "Draw due to insufficient material"
-    
-    return None
+    status = get_game_status(current_position, current_player)
+    return status['result']
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -151,6 +39,197 @@ heuristic = None
 searcher = None
 move_history = []  # Track all moves made
 current_player = 'white'  # Track whose turn it is (white = player, black = AI)
+position_history_counts = {}
+halfmove_clock = 0
+
+
+def _log_make_move_context(stage, **details):
+    """Emit consistent debug logging for /make_move failures and state transitions."""
+    print(f"[MAKE_MOVE] {stage}")
+    for key, value in details.items():
+        print(f"[MAKE_MOVE]   {key}: {value}")
+
+
+def get_display_position(position, side_to_move):
+    return position if side_to_move == 'white' else position.rotate()
+
+
+def get_position_hash(position):
+    return (position.board, position.wc, position.bc, position.ep)
+
+
+def reset_rule_tracking():
+    global position_history_counts, halfmove_clock
+    halfmove_clock = 0
+    position_history_counts = {get_position_hash(current_position): 1}
+
+
+def record_position(position):
+    key = get_position_hash(position)
+    position_history_counts[key] = position_history_counts.get(key, 0) + 1
+    return position_history_counts[key]
+
+
+def normalize_promotion_choice(choice, default='Q'):
+    promotion = (choice or default or 'Q').upper()
+    return promotion if promotion in ('Q', 'R', 'B', 'N') else default
+
+
+def get_move_metadata(position, move):
+    from_coord, to_coord = move
+    piece_code = position.board[from_coord]
+    target_piece = position.board[to_coord]
+    is_en_passant = (
+        piece_code == 'P' and
+        target_piece == '.' and
+        to_coord == position.ep and
+        (to_coord - from_coord) in (N + W, N + E)
+    )
+    is_capture = target_piece.islower() or is_en_passant
+    captured_piece = target_piece.lower() if target_piece.islower() else ('p' if is_en_passant else None)
+    return {
+        'piece': piece_code,
+        'pawn_move': piece_code == 'P',
+        'capture': is_capture,
+        'captured_piece': captured_piece,
+        'is_en_passant': is_en_passant,
+    }
+
+
+def apply_tracked_move(position, move, promotion='Q'):
+    global halfmove_clock
+    metadata = get_move_metadata(position, move)
+    next_position = position.move(move, promotion=promotion)
+    if metadata['pawn_move'] or metadata['capture']:
+        halfmove_clock = 0
+    else:
+        halfmove_clock += 1
+    metadata['repetition_count'] = record_position(next_position)
+    return next_position, metadata
+
+
+def is_insufficient_material(position, side_to_move):
+    display_position = get_display_position(position, side_to_move)
+    pieces = {'white': [], 'black': []}
+
+    for square, piece in board_to_dict(display_position, include_code=False).items():
+        pieces[piece['color']].append((piece['type'], square))
+
+    for color in ('white', 'black'):
+        for piece_type, _ in pieces[color]:
+            if piece_type in ('p', 'r', 'q'):
+                return False
+
+    white_minors = [(piece_type, square) for piece_type, square in pieces['white'] if piece_type != 'k']
+    black_minors = [(piece_type, square) for piece_type, square in pieces['black'] if piece_type != 'k']
+
+    if not white_minors and not black_minors:
+        return True
+
+    if len(white_minors) == 1 and white_minors[0][0] in ('b', 'n') and not black_minors:
+        return True
+
+    if len(black_minors) == 1 and black_minors[0][0] in ('b', 'n') and not white_minors:
+        return True
+
+    if (
+        len(white_minors) == 1 and white_minors[0][0] == 'b' and
+        len(black_minors) == 1 and black_minors[0][0] == 'b'
+    ):
+        def square_color(square):
+            file_index = ord(square[0]) - ord('a')
+            rank_index = int(square[1]) - 1
+            return (file_index + rank_index) % 2
+
+        return square_color(white_minors[0][1]) == square_color(black_minors[0][1])
+
+    return False
+
+
+def get_game_status(position, side_to_move):
+    in_check = position.is_current_player_in_check()
+    legal_moves = list(position.gen_moves())
+
+    if not legal_moves:
+        if in_check:
+            winner = 'black' if side_to_move == 'white' else 'white'
+            return {
+                'game_over': True,
+                'result': f'Checkmate! {winner.capitalize()} wins',
+                'draw_reason': None,
+                'in_check': True,
+                'legal_moves': [],
+                'game_state': 'game_over',
+            }
+        return {
+            'game_over': True,
+            'result': 'Draw by stalemate',
+            'draw_reason': 'stalemate',
+            'in_check': False,
+            'legal_moves': [],
+            'game_state': 'game_over',
+        }
+
+    repetition_count = position_history_counts.get(get_position_hash(position), 0)
+    if repetition_count >= 3:
+        return {
+            'game_over': True,
+            'result': 'Draw by threefold repetition',
+            'draw_reason': 'threefold repetition',
+            'in_check': in_check,
+            'legal_moves': [],
+            'game_state': 'game_over',
+        }
+
+    if halfmove_clock >= 100:
+        return {
+            'game_over': True,
+            'result': 'Draw by fifty-move rule',
+            'draw_reason': 'fifty-move rule',
+            'in_check': in_check,
+            'legal_moves': [],
+            'game_state': 'game_over',
+        }
+
+    if is_insufficient_material(position, side_to_move):
+        return {
+            'game_over': True,
+            'result': 'Draw by insufficient material',
+            'draw_reason': 'insufficient material',
+            'in_check': in_check,
+            'legal_moves': [],
+            'game_state': 'game_over',
+        }
+
+    return {
+        'game_over': False,
+        'result': None,
+        'draw_reason': None,
+        'in_check': in_check,
+        'legal_moves': format_moves_for_frontend(legal_moves),
+        'game_state': 'active',
+    }
+
+
+def build_move_response(position, side_to_move, status, last_move=None, ai_move=None):
+    response = {
+        'valid': True,
+        'board': board_to_dict(get_display_position(position, side_to_move)),
+        'legalMoves': status['legal_moves'] if side_to_move == 'white' and not status['game_over'] else [],
+        'lastMove': last_move,
+        'moves': move_history,
+        'game_over': status['game_over'],
+        'result': status['result'],
+        'in_check': status['in_check'],
+        'draw_reason': status['draw_reason'],
+        'gameState': status['game_state'],
+        'gameResult': status['result'],
+        'check': status['in_check'],
+        'currentPlayer': side_to_move,
+    }
+    if ai_move:
+        response['aiMove'] = ai_move
+    return response
 
 # Load the app before request
 @app.before_request
@@ -180,9 +259,10 @@ def initialize_game():
     # Reset move history and current player
     move_history = []
     current_player = 'white'  # Always start with white (player)
+    reset_rule_tracking()
     
     # Get difficulty level from request (default to medium)
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     difficulty = data.get('difficulty', 'medium')
     
     # Set AI parameters based on difficulty
@@ -205,7 +285,8 @@ def initialize_game():
     searcher = Minimax(heuristic)
     
     # Get the board representation
-    board_representation = board_to_dict(current_position, include_code=True, use_full_words=True)
+    board_representation = board_to_dict(current_position, include_code=True)
+    legal_moves = format_moves_for_frontend(current_position.gen_moves())
     
     # Log the board state for debugging
     print("Initial board state:")
@@ -216,6 +297,11 @@ def initialize_game():
     return jsonify({
         'board': board_representation,
         'gameState': 'active',
+        'legalMoves': legal_moves,
+        'game_over': False,
+        'result': None,
+        'in_check': current_position.is_current_player_in_check(),
+        'draw_reason': None,
         'message': f'Game started with {difficulty} difficulty',
         'currentPlayer': current_player  # Include current player in response
     })
@@ -242,25 +328,54 @@ def evolve_ai():
     })
 
 @app.route('/move', methods=['POST'])
+@app.route('/make_move', methods=['POST'])
 def make_move():
     """Handle player's move and AI's response."""
     global current_position, current_player, move_history
     
     if not current_position or not heuristic or not searcher:
-        return jsonify({'error': 'Game not initialized', 'valid': False}), 400
+        return jsonify({'error': 'Game not initialized', 'valid': False, 'gameState': 'inactive'}), 400
     
     if current_player != 'white':
-        return jsonify({'error': 'Not your turn', 'valid': False}), 400
+        status = get_game_status(current_position, current_player)
+        return jsonify({
+            'error': 'Not your turn',
+            'valid': False,
+            'gameState': status['game_state'],
+            'game_over': status['game_over'],
+            'result': status['result'],
+            'draw_reason': status['draw_reason'],
+            'in_check': status['in_check'],
+        }), 400
     
     # Get move details from request
     data = request.get_json()
     from_square = data.get('from')
     to_square = data.get('to')
+    promotion_choice = normalize_promotion_choice(data.get('promotion'))
     
     if not from_square or not to_square:
-        return jsonify({'error': 'Missing from or to square', 'valid': False}), 400
+        status = get_game_status(current_position, current_player)
+        return jsonify({
+            'error': 'Missing from or to square',
+            'valid': False,
+            'gameState': status['game_state'],
+            'game_over': status['game_over'],
+            'result': status['result'],
+            'draw_reason': status['draw_reason'],
+            'in_check': status['in_check'],
+        }), 400
     
     try:
+        _log_make_move_context(
+            "request_received",
+            endpoint=request.path,
+            from_square=from_square,
+            to_square=to_square,
+            current_player=current_player,
+            move_history_length=len(move_history),
+        )
+
         # Convert algebraic notation to array indices
         from_coord = square_to_coord(from_square)
         to_coord = square_to_coord(to_square)
@@ -268,49 +383,79 @@ def make_move():
         # Verify it's a valid move
         valid_moves = list(current_position.gen_moves())
         move = (from_coord, to_coord)
+
+        _log_make_move_context(
+            "player_move_validated",
+            from_coord=from_coord,
+            to_coord=to_coord,
+            valid_move_count=len(valid_moves),
+            board_before_move=repr(current_position.board),
+        )
         
         if move not in valid_moves:
-            return jsonify({'error': 'Invalid move', 'valid': False}), 400
+            status = get_game_status(current_position, current_player)
+            return jsonify({
+                'error': 'Invalid move',
+                'valid': False,
+                'gameState': status['game_state'],
+                'game_over': status['game_over'],
+                'result': status['result'],
+                'draw_reason': status['draw_reason'],
+                'in_check': status['in_check'],
+                'board': board_to_dict(get_display_position(current_position, current_player)),
+            }), 400
         
-        # Execute the player's move
-        new_position = current_position.move(move)
+        # Record the moving piece before applying the move (board is about to rotate)
+        moving_piece = current_position.board[from_coord]
+        is_player_promotion = moving_piece == 'P' and A8 <= to_coord <= H8
+
+        # Execute the player's move — Position.move() always rotates the board,
+        # so new_position is now from BLACK's perspective (indices mirrored).
+        new_position, player_move_meta = apply_tracked_move(
+            current_position,
+            move,
+            promotion=promotion_choice if is_player_promotion else 'Q'
+        )
         current_position = new_position  # Update the global position
         current_player = 'black'
-        
-        # Add the move to history
+
+        # Add the move to history (use moving_piece recorded before rotation)
         move_history.append({
             'from': from_square,
             'to': to_square,
             'player': 'white',
-            'piece': current_position.board[to_coord].lower()
+            'piece': (promotion_choice.lower() if is_player_promotion else moving_piece.lower())
         })
-        
-        # Check for game end conditions after player's move
-        game_result = check_game_result()
-        if game_result:
-            # Convert the board to dictionary for the frontend
-            board_dict = board_to_dict(new_position)
-            # Ensure the board is complete
-            if len(board_dict) < 32:
-                board_dict = _ensure_complete_board(board_dict)
-            
-            return jsonify({
-                'valid': True,
-                'board': board_dict,
-                'gameResult': game_result,
-                'legalMoves': [],
-                'lastMove': {'from': from_square, 'to': to_square},
-                'check': is_king_in_check(new_position),
-                'moves': move_history
-            })
+
+        player_status = get_game_status(current_position, current_player)
+        if player_status['game_over']:
+            return jsonify(build_move_response(
+                current_position,
+                current_player,
+                player_status,
+                last_move={'from': from_square, 'to': to_square},
+            ))
         
         # Make AI move
         search_result = None
         try:
+            _log_make_move_context(
+                "ai_search_start",
+                board_for_ai=repr(new_position.board),
+                heuristic_type=type(heuristic).__name__ if heuristic is not None else None,
+                searcher_type=type(searcher).__name__ if searcher is not None else None,
+                move_history_snapshot=repr(move_history),
+            )
             search_result = searcher.search(new_position, secs=1.5)
         except Exception as e:
-            print(f"Error calling search method: {e}")
             import traceback
+            _log_make_move_context(
+                "ai_search_exception",
+                error=repr(e),
+                board_for_ai=repr(new_position.board),
+                current_player=current_player,
+                move_history_snapshot=repr(move_history),
+            )
             traceback.print_exc()
         
         ai_move = None
@@ -340,75 +485,65 @@ def make_move():
             if isinstance(ai_move, tuple) and len(ai_move) == 2:
                 ai_from_coord, ai_to_coord = ai_move
             else:
-                # If for some reason ai_move is not in the expected format, log and return
                 print(f"Unexpected AI move format: {ai_move}")
-                return jsonify({'error': 'Invalid AI move format', 'valid': False}), 500
-                
-            # Update position with AI's move
+                return jsonify({'error': 'Invalid AI move format', 'valid': False, 'gameState': 'active'}), 500
+
+            # Record AI piece before applying the move (current_position is still rotated
+            # to black's perspective, so ai_from_coord is a valid index into this board).
+            ai_piece = current_position.board[ai_from_coord]
+
+            # Apply AI's move — rotates board back to white's perspective.
             ai_move = (ai_from_coord, ai_to_coord)
-            current_position = current_position.move(ai_move)
+            current_position, ai_move_meta = apply_tracked_move(current_position, ai_move, promotion='Q')
             current_player = 'white'
-            
-            # Calculate the move in algebraic notation for frontend
-            ai_from_square = coord_to_square(ai_from_coord)
-            ai_to_square = coord_to_square(ai_to_coord)
-            
+
+            # AI coordinates are in rotated (black's-perspective) space.
+            # Mirror them with (119 - coord) to get standard white-perspective squares.
+            ai_from_square = coord_to_square(119 - ai_from_coord)
+            ai_to_square = coord_to_square(119 - ai_to_coord)
+
             # Add AI move to history
             move_history.append({
                 'from': ai_from_square,
                 'to': ai_to_square,
                 'player': 'black',
-                'piece': current_position.board[ai_move[1]].lower()
+                'piece': ai_piece.lower()
             })
             
-            # Check for game end conditions after AI's move
-            game_result = check_game_result()
-            
-            # Get legal moves for the player
-            legal_moves = format_moves_for_frontend(current_position.gen_moves())
-            
-            # Convert the board to dictionary for the frontend
-            board_dict = board_to_dict(current_position)
-            # Ensure the board is complete
-            if len(board_dict) < 32:
-                board_dict = _ensure_complete_board(board_dict)
-            
-            return jsonify({
-                'valid': True,
-                'board': board_dict,
-                'legalMoves': legal_moves,
-                'lastMove': {'from': ai_from_square, 'to': ai_to_square},
-                'gameResult': game_result,
-                'check': is_king_in_check(current_position),
-                'moves': move_history,
-                'aiMove': {'from': ai_from_square, 'to': ai_to_square}
-            })
+            ai_status = get_game_status(current_position, current_player)
+            return jsonify(build_move_response(
+                current_position,
+                current_player,
+                ai_status,
+                last_move={'from': ai_from_square, 'to': ai_to_square},
+                ai_move={'from': ai_from_square, 'to': ai_to_square}
+            ))
         else:
-            # AI has no valid moves but is not in checkmate or stalemate
+            # AI has no valid moves but is not in checkmate or stalemate.
+            # current_position is still rotated (black's perspective); rotate back.
             current_player = 'white'
-            
-            # Get legal moves for the player
-            legal_moves = format_moves_for_frontend(current_position.gen_moves())
-            
-            # Convert the board to dictionary for the frontend
-            board_dict = board_to_dict(current_position)
-            # Ensure the board is complete
-            if len(board_dict) < 32:
-                board_dict = _ensure_complete_board(board_dict)
-            
-            return jsonify({
-                'valid': True,
-                'board': board_dict,
-                'legalMoves': legal_moves,
-                'lastMove': {'from': from_square, 'to': to_square},
-                'gameResult': 'AI could not move',
-                'check': is_king_in_check(current_position),
-                'moves': move_history
-            })
+            current_position = current_position.rotate()
+            record_position(current_position)
+            ai_status = get_game_status(current_position, current_player)
+            if not ai_status['result']:
+                ai_status['result'] = 'AI could not move'
+            return jsonify(build_move_response(
+                current_position,
+                current_player,
+                ai_status,
+                last_move={'from': from_square, 'to': to_square},
+            ))
     except Exception as e:
         # Log the error with stack trace
         import traceback
-        print(f"Error processing move: {e}")
+        _log_make_move_context(
+            "route_exception",
+            error=repr(e),
+            endpoint=request.path,
+            current_player=current_player,
+            move_history_snapshot=repr(move_history),
+            current_board=repr(current_position.board) if current_position else None,
+        )
         traceback.print_exc()
         
         return jsonify({'error': str(e), 'valid': False}), 500
@@ -573,51 +708,29 @@ def board_to_dict(position, include_code=True, use_full_words=False):
         'k': 'king'
     }
     
-    # Initialize an empty dictionary for the result
+    # Iterate over the 64 legal chess squares directly so serialization is
+    # anchored to the same square/coord mapping used everywhere else.
     result = {}
-    
-    # Process the board (which is a 120-element string)
-    for i in range(len(position.board)):
-        # Skip empty squares and squares outside the 8x8 board
-        # The board is represented as a 10x12 grid, with the actual 8x8 board in the middle
-        if (position.board[i] == ' ' or  # Empty square
-            position.board[i] == '.' or  # Empty square within the 8x8 board
-            position.board[i] == '\n' or  # Newline character
-            i < 21 or i > 98 or  # Outside the 8x8 board (top and bottom padding)
-            i % 10 == 0 or i % 10 == 9):  # Outside the 8x8 board (left and right padding)
-            continue
-        
-        try:
-            # Convert the index to a square name (e.g., 'e4')
-            square = coord_to_square(i)
-            
-            # Get the piece type (e.g., 'p', 'r', 'n', etc.)
-            piece_type = position.board[i].lower()
-            
-            # Skip empty squares
-            if piece_type == '.':
+    for rank in range(8, 0, -1):
+        for file_char in "abcdefgh":
+            square = f"{file_char}{rank}"
+            coord = square_to_coord(square)
+            piece_code = position.board[coord]
+
+            if piece_code in (' ', '.', '\n'):
                 continue
-                
-            # Determine the piece color
-            # In the Position object, uppercase letters represent WHITE pieces, lowercase represent BLACK
-            color = 'white' if position.board[i].isupper() else 'black'
-            
-            # Map single-letter piece types to full words if requested
+
+            piece_type = piece_code.lower()
+            color = 'white' if piece_code.isupper() else 'black'
+
             if use_full_words and piece_type in piece_name_map:
                 piece_type = piece_name_map[piece_type]
-            
-            # Create the piece dictionary
+
             piece_dict = {'type': piece_type, 'color': color}
-            
-            # Add the code property if requested
             if include_code:
-                piece_dict['code'] = position.board[i]
-            
-            # Add the result to the dictionary
+                piece_dict['code'] = piece_code
+
             result[square] = piece_dict
-        except ValueError:
-            # Skip any coordinates that can't be converted to square notation
-            continue
     
     # Ensure all 32 pieces are included in the initial position
     if position.board == initial and len(result) < 32:
@@ -644,44 +757,14 @@ def board_to_dict(position, include_code=True, use_full_words=False):
 
 def _generate_standard_initial_board(include_code=True):
     """Generate a standard initial chess board with all 32 pieces."""
-    # This is a complete standard initial board with exactly 32 pieces
-    result = {
-        # Black pieces (ranks 1-2)
-        'a1': {'color': 'black', 'type': 'r'},
-        'b1': {'color': 'black', 'type': 'n'},
-        'c1': {'color': 'black', 'type': 'b'},
-        'd1': {'color': 'black', 'type': 'q'},
-        'e1': {'color': 'black', 'type': 'k'},
-        'f1': {'color': 'black', 'type': 'b'},
-        'g1': {'color': 'black', 'type': 'n'},
-        'h1': {'color': 'black', 'type': 'r'},
-        'a2': {'color': 'black', 'type': 'p'},
-        'b2': {'color': 'black', 'type': 'p'},
-        'c2': {'color': 'black', 'type': 'p'},
-        'd2': {'color': 'black', 'type': 'p'},
-        'e2': {'color': 'black', 'type': 'p'},
-        'f2': {'color': 'black', 'type': 'p'},
-        'g2': {'color': 'black', 'type': 'p'},
-        'h2': {'color': 'black', 'type': 'p'},
-        
-        # White pieces (ranks 7-8)
-        'a8': {'color': 'white', 'type': 'r'},
-        'b8': {'color': 'white', 'type': 'n'},
-        'c8': {'color': 'white', 'type': 'b'},
-        'd8': {'color': 'white', 'type': 'q'},
-        'e8': {'color': 'white', 'type': 'k'},
-        'f8': {'color': 'white', 'type': 'b'},
-        'g8': {'color': 'white', 'type': 'n'},
-        'h8': {'color': 'white', 'type': 'r'},
-        'a7': {'color': 'white', 'type': 'p'},
-        'b7': {'color': 'white', 'type': 'p'},
-        'c7': {'color': 'white', 'type': 'p'},
-        'd7': {'color': 'white', 'type': 'p'},
-        'e7': {'color': 'white', 'type': 'p'},
-        'f7': {'color': 'white', 'type': 'p'},
-        'g7': {'color': 'white', 'type': 'p'},
-        'h7': {'color': 'white', 'type': 'p'}
-    }
+    result = {}
+    back_rank = ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
+
+    for file_char, piece_type in zip('abcdefgh', back_rank):
+        result[f'{file_char}1'] = {'color': 'white', 'type': piece_type}
+        result[f'{file_char}2'] = {'color': 'white', 'type': 'p'}
+        result[f'{file_char}7'] = {'color': 'black', 'type': 'p'}
+        result[f'{file_char}8'] = {'color': 'black', 'type': piece_type}
     
     # Add code property if requested
     if include_code:

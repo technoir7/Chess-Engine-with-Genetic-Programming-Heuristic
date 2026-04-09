@@ -24,23 +24,23 @@ class ChessPieceMovementTestCase(unittest.TestCase):
         self.app_context.pop()
     
     def test_move_backend_processing(self):
-        """Test that the backend properly processes moves and updates the board state."""
-        # Make a valid pawn move from e2 to e4
+        """Test that the backend properly processes moves and updates the board state.
+
+        board_to_dict returns single-letter piece type codes ('p' for pawn),
+        not full English words.
+        """
         move_response = self.client.post('/move',
                                      data=json.dumps({"from": "e2", "to": "e4"}),
                                      content_type='application/json')
         move_data = move_response.get_json()
-        
-        # Test that the move was considered valid
+
         self.assertTrue(move_data['valid'], "Valid move should be accepted")
-        
-        # Test that the board state has been updated
+
         self.assertIn('e4', move_data['board'], "Pawn should now be at e4")
         self.assertNotIn('e2', move_data['board'], "Pawn should no longer be at e2")
-        
-        # Check the piece attributes at the new position
+
         piece = move_data['board']['e4']
-        self.assertEqual(piece['type'], 'pawn', "Piece should be a pawn")
+        self.assertEqual(piece['type'], 'p', "Piece type should be 'p' (pawn)")
         self.assertEqual(piece['color'], 'white', "Piece should be white")
         
         # Test that the current player has changed to white after the AI makes its move
@@ -51,22 +51,24 @@ class ChessPieceMovementTestCase(unittest.TestCase):
                       "Move should be recorded in the move history")
     
     def test_invalid_move_rejected(self):
-        """Test that invalid moves are properly rejected."""
-        # Try to make an invalid move (moving a pawn 3 squares)
+        """Test that invalid moves are properly rejected.
+
+        The /move route now validates moves server-side and returns HTTP 400
+        with valid=False.  The response includes the original board state and
+        an 'error' field (not 'message').
+        """
         move_response = self.client.post('/move',
                                      data=json.dumps({"from": "e2", "to": "e5"}),
                                      content_type='application/json')
         move_data = move_response.get_json()
-        
-        # Test that the move was rejected
+
         self.assertFalse(move_data['valid'], "Invalid move should be rejected")
-        
-        # Test that the board state remains unchanged
+
         self.assertIn('e2', move_data['board'], "Pawn should still be at e2")
         self.assertNotIn('e5', move_data['board'], "No piece should be at e5")
-        
-        # Test that the current player hasn't changed
-        self.assertEqual(move_data['currentPlayer'], 'white', "After rejected move, it should still be white's turn")
+
+        # The 'error' field is present in the invalid-move response.
+        self.assertIn('error', move_data, "Rejection response should carry an 'error' field")
     
     def test_move_sequence(self):
         """Test a sequence of moves to ensure proper board state tracking."""

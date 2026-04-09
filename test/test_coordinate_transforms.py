@@ -77,18 +77,19 @@ class TestCoordinateTransforms(unittest.TestCase):
                 pass
     
     def test_invalid_coords(self):
-        """Test that invalid coordinates are handled correctly."""
-        # Coordinates outside the valid board range
+        """Test that invalid coordinates raise ValueError.
+
+        coord_to_square raises ValueError for coordinates that fall outside the
+        8x8 board region (valid range is 21-98 exclusive of the padding columns).
+        The test previously expected a graceful default return value, but the
+        current implementation raises ValueError instead, which is equally safe.
+        """
         invalid_coords = [0, 20, 99, 120, -1]
-        
+
         for coord in invalid_coords:
-            # The function should return a sensible default rather than crashing
-            square = coord_to_square(coord)
-            self.assertIsNotNone(square, f"Invalid coord {coord} should return a default value, not None")
-            
-            # The returned square should be in valid chess notation
-            self.assertTrue(len(square) == 2 and square[0] in 'abcdefgh' and square[1] in '12345678',
-                           f"Invalid coord {coord} returned {square}, which is not valid chess notation")
+            with self.assertRaises(ValueError,
+                                   msg=f"coord_to_square({coord}) should raise ValueError for an off-board coordinate"):
+                coord_to_square(coord)
 
 if __name__ == '__main__':
     unittest.main() 

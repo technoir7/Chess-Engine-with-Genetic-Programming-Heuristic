@@ -27,23 +27,24 @@ class ChessBoardIssuesTestCase(unittest.TestCase):
         self.assertIn('board', data)
         board = data['board']
         
-        # Check white pieces (bottom row)
-        self.assertEqual(board['a1']['code'], 'r', "White rook should be at a1")
+        # Check white pieces (bottom row).
+        # board_to_dict stores codes as uppercase for white pieces, lowercase for black.
+        self.assertEqual(board['a1']['code'], 'R', "White rook should be at a1")
         self.assertEqual(board['a1']['color'], 'white')
-        self.assertEqual(board['b1']['code'], 'n', "White knight should be at b1")
-        self.assertEqual(board['c1']['code'], 'b', "White bishop should be at c1") 
-        self.assertEqual(board['d1']['code'], 'q', "White queen should be at d1")
-        self.assertEqual(board['e1']['code'], 'k', "White king should be at e1")
-        self.assertEqual(board['f1']['code'], 'b', "White bishop should be at f1")
-        self.assertEqual(board['g1']['code'], 'n', "White knight should be at g1")
-        self.assertEqual(board['h1']['code'], 'r', "White rook should be at h1")
-        
-        # Check white pawns (second row)
+        self.assertEqual(board['b1']['code'], 'N', "White knight should be at b1")
+        self.assertEqual(board['c1']['code'], 'B', "White bishop should be at c1")
+        self.assertEqual(board['d1']['code'], 'Q', "White queen should be at d1")
+        self.assertEqual(board['e1']['code'], 'K', "White king should be at e1")
+        self.assertEqual(board['f1']['code'], 'B', "White bishop should be at f1")
+        self.assertEqual(board['g1']['code'], 'N', "White knight should be at g1")
+        self.assertEqual(board['h1']['code'], 'R', "White rook should be at h1")
+
+        # Check white pawns (second row) — uppercase code for white.
         for col in 'abcdefgh':
-            self.assertEqual(board[f'{col}2']['code'], 'p', f"White pawn should be at {col}2")
+            self.assertEqual(board[f'{col}2']['code'], 'P', f"White pawn should be at {col}2")
             self.assertEqual(board[f'{col}2']['color'], 'white')
-        
-        # Check black pieces (top row)
+
+        # Check black pieces (top row) — lowercase code for black.
         self.assertEqual(board['a8']['code'], 'r', "Black rook should be at a8")
         self.assertEqual(board['a8']['color'], 'black')
         self.assertEqual(board['b8']['code'], 'n', "Black knight should be at b8")
@@ -53,8 +54,8 @@ class ChessBoardIssuesTestCase(unittest.TestCase):
         self.assertEqual(board['f8']['code'], 'b', "Black bishop should be at f8")
         self.assertEqual(board['g8']['code'], 'n', "Black knight should be at g8")
         self.assertEqual(board['h8']['code'], 'r', "Black rook should be at h8")
-        
-        # Check black pawns (seventh row)
+
+        # Check black pawns (seventh row) — lowercase code for black.
         for col in 'abcdefgh':
             self.assertEqual(board[f'{col}7']['code'], 'p', f"Black pawn should be at {col}7")
             self.assertEqual(board[f'{col}7']['color'], 'black')
@@ -102,9 +103,10 @@ class ChessBoardIssuesTestCase(unittest.TestCase):
         self.assertIn('board', data)
         board = data['board']
         
-        # Verify the pawn has moved
+        # Verify the pawn has moved.
+        # White pieces carry uppercase codes in the current board_to_dict implementation.
         self.assertIn('e4', board, "Pawn should be at e4")
-        self.assertEqual(board['e4']['code'], 'p', "Piece at e4 should be a pawn")
+        self.assertEqual(board['e4']['code'], 'P', "Piece at e4 should be a white pawn (uppercase code)")
         self.assertEqual(board['e4']['color'], 'white')
 
         # Check AI has made a move

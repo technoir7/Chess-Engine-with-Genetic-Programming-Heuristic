@@ -249,6 +249,10 @@ footer a:hover {
     z-index: 10;
 }
 
+#promotion-modal.active {
+    display: flex;
+}
+
 .promotion-pieces {
     display: flex;
     flex-direction: column;

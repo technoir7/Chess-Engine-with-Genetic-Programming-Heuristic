@@ -5,12 +5,14 @@
 class ChessBoard {
     constructor() {
         this.boardElement = document.getElementById('chessboard');
+        this.promotionModal = document.getElementById('promotion-modal');
         this.squares = {};
         this.selectedSquare = null;
         this.legalMoves = [];
         this.lastMove = null;
         this.boardState = {};
         this.orientation = 'white'; // white pieces at bottom
+        this.pendingPromotionResolver = null;
         this.pieceImages = {
             'p': '/static/images/pieces/black-pawn.svg',
             'r': '/static/images/pieces/black-rook.svg',
@@ -124,6 +126,21 @@ class ChessBoard {
                 this.handleSquareClick(squareId);
             }
         });
+
+        if (this.promotionModal) {
+            this.promotionModal.querySelectorAll('.promotion-piece').forEach((pieceOption) => {
+                pieceOption.addEventListener('click', () => {
+                    if (!this.pendingPromotionResolver) {
+                        return;
+                    }
+
+                    const resolver = this.pendingPromotionResolver;
+                    this.pendingPromotionResolver = null;
+                    this.promotionModal.classList.remove('active');
+                    resolver(pieceOption.dataset.piece || 'q');
+                });
+            });
+        }
     }
 
     /**
@@ -650,31 +667,56 @@ class ChessBoard {
             console.error(`No piece found at ${from}`);
             return;
         }
-        
-        // Store the original board state before making the move
+
+        if (this.needsPromotion(movingPiece, to)) {
+            this.requestPromotionChoice().then((promotion) => {
+                this.executeMove(from, to, movingPiece, promotion);
+            });
+            return;
+        }
+
+        this.executeMove(from, to, movingPiece, null);
+    }
+
+    executeMove(from, to, movingPiece, promotion) {
         const originalBoardState = { ...this.boardState };
-        
-        // Create new board state (optimistic update)
         const newBoardState = { ...this.boardState };
         newBoardState[to] = { ...newBoardState[from] };
+
+        if (promotion) {
+            newBoardState[to] = {
+                ...newBoardState[to],
+                type: promotion,
+                code: newBoardState[to].color === 'white' ? promotion.toUpperCase() : promotion
+            };
+        }
+
         delete newBoardState[from];
-        
-        // Update the UI optimistically
+
         this.updateBoardUI(newBoardState);
-        
-        // Update the last move highlight
         this.updateLastMoveHighlight(from, to);
-        
-        // Deselect the square
         this.deselectSquare();
-        
-        // Send move to backend
-        this.sendMoveToBackend(from, to, movingPiece, originalBoardState);
-        
-        // Update the internal board state with the optimistic update
+        this.sendMoveToBackend(from, to, movingPiece, originalBoardState, promotion);
+
         this.boardState = newBoardState;
-        
+        this.publishBoardState(newBoardState);
+
         console.log(`Move completed from ${from} to ${to}`);
+    }
+
+    needsPromotion(piece, to) {
+        return piece && piece.type === 'p' && piece.color === 'white' && to[1] === '8';
+    }
+
+    requestPromotionChoice() {
+        if (!this.promotionModal) {
+            return Promise.resolve('q');
+        }
+
+        this.promotionModal.classList.add('active');
+        return new Promise((resolve) => {
+            this.pendingPromotionResolver = resolve;
+        });
     }
     
     updateLastMoveHighlight(from, to) {
@@ -698,7 +740,7 @@ class ChessBoard {
      * @param {Object} piece - The piece being moved
      * @param {Object} originalBoardState - Original board state to revert to if move fails
      */
-    sendMoveToBackend(from, to, piece, originalBoardState) {
+    sendMoveToBackend(from, to, piece, originalBoardState, promotion = null) {
         console.log(`Sending move from ${from} to ${to} to backend`);
         
         // Show loading indicator
@@ -717,7 +759,8 @@ class ChessBoard {
             from: from,
             to: to,
             piece_type: piece.type,
-            piece_color: piece.color
+            piece_color: piece.color,
+            promotion: promotion
         };
         
         // Send the request
@@ -736,16 +779,9 @@ class ChessBoard {
             }
             
             if (!response.ok) {
-                // Server returned an error
-                console.error(`Server returned error: ${response.status}`);
-                // Instead of reverting the move, we'll allow it to proceed in the UI
-                console.log('Continuing with client-side move despite server error');
-                this.showNotification('Move processed locally (server unavailable)', 'warning');
-                
-                // Add the move to legal moves to ensure it's considered valid in the future
-                this.legalMoves.push({ from: from, to: to });
-                
-                return { success: true, message: 'Move allowed locally' };
+                return response.json().then((payload) => {
+                    throw { status: response.status, payload };
+                });
             }
             
             return response.json();
@@ -753,35 +789,58 @@ class ChessBoard {
         .then(data => {
             console.log('Server response:', data);
             
-            if (data && data.success) {
+            const moveAccepted = Boolean(data && (data.valid || data.success));
+            const legalMoves = data?.legalMoves || data?.legal_moves || [];
+            const boardState = data?.board || data?.board_state;
+            
+            if (moveAccepted) {
                 console.log('Move accepted by server');
-                
+
                 // Update legal moves if provided by server
-                if (data.legal_moves && data.legal_moves.length > 0) {
-                    this.legalMoves = data.legal_moves;
-                    console.log(`Updated legal moves from server (${data.legal_moves.length} moves)`);
+                if (Array.isArray(legalMoves) && legalMoves.length > 0) {
+                    this.legalMoves = legalMoves;
+                    console.log(`Updated legal moves from server (${legalMoves.length} moves)`);
                 } else {
                     // If server doesn't provide legal moves, ensure we have default ones
                     this.addDefaultLegalMoves();
                 }
-                
-                // Update board state if provided
-                if (data.board_state) {
-                    this.updateBoardUI(data.board_state);
-                    this.boardState = data.board_state;
+
+                // Sync board with authoritative server state (includes AI's move)
+                if (boardState) {
+                    this.updateBoardUI(boardState);
+                    this.boardState = boardState;
+                    this.publishBoardState(boardState);
                 }
-                
-                // Show notification if provided
-                if (data.message) {
-                    this.showNotification(data.message, 'success');
+
+                // Highlight AI's last move if provided
+                if (data.aiMove) {
+                    this.updateLastMoveHighlight(data.aiMove.from, data.aiMove.to);
+                }
+
+                // Notify game.js so move history and button states are updated
+                document.dispatchEvent(new CustomEvent('moveCompleted', {
+                    detail: {
+                        from: from,
+                        to: to,
+                        aiMove: data.aiMove || null,
+                        currentPlayer: data.currentPlayer || 'white'
+                    }
+                }));
+
+                // Signal game over if the server says so
+                if (data.game_over) {
+                    document.dispatchEvent(new CustomEvent('gameEnded', {
+                        detail: { message: data.result || data.gameResult }
+                    }));
                 }
             } else {
-                // Even if the server rejects the move, we'll allow it in the UI
-                console.log('Server rejected the move, but allowing it locally');
-                this.showNotification('Move allowed locally (server rejected it)', 'warning');
-                
-                // Add the move to legal moves to ensure it's considered valid in the future
-                this.legalMoves.push({ from: from, to: to });
+                this.boardState = originalBoardState;
+                this.publishBoardState(originalBoardState);
+                this.updateBoardUI(originalBoardState);
+                this.showNotification(data.error || 'Move rejected by server', 'warning');
+                document.dispatchEvent(new CustomEvent('moveFailed', {
+                    detail: { message: data.error || 'Invalid move' }
+                }));
             }
         })
         .catch(error => {
@@ -793,12 +852,15 @@ class ChessBoard {
                 document.getElementById('loading-message').style.display = 'none';
             }
             
-            // Instead of reverting to original state, we'll keep the move in the UI
-            console.log('Network error, but keeping the move in the UI');
-            this.showNotification('Move processed locally (server connection failed)', 'warning');
-            
-            // Add the move to legal moves to ensure it's considered valid in the future
-            this.legalMoves.push({ from: from, to: to });
+            this.boardState = originalBoardState;
+            this.publishBoardState(originalBoardState);
+            this.updateBoardUI(originalBoardState);
+
+            const message = error?.payload?.error || error?.message || 'Server connection failed';
+            this.showNotification(message, 'warning');
+            document.dispatchEvent(new CustomEvent('moveError', {
+                detail: { message }
+            }));
         });
     }
     
@@ -827,6 +889,7 @@ class ChessBoard {
         
         // Update board state
         this.boardState = boardState;
+        this.publishBoardState(boardState);
         
         // Update legal moves if provided
         if (legalMoves && Array.isArray(legalMoves)) {
@@ -879,8 +942,16 @@ class ChessBoard {
                 const pieceElement = document.createElement('div');
                 pieceElement.className = `piece ${piece.color}`;
                 
+                const pieceCode = this.getPieceCode(piece);
+                const pieceImage = this.pieceImages[pieceCode];
+
+                if (!pieceImage) {
+                    console.warn(`No image mapping found for piece on ${squareId}:`, piece);
+                    return;
+                }
+
                 const img = document.createElement('img');
-                img.src = this.pieceImages[piece.code];
+                img.src = pieceImage;
                 img.alt = `${piece.color} ${piece.type}`;
                 img.draggable = false;
                 
@@ -891,6 +962,33 @@ class ChessBoard {
         
         // Highlight the last move
         this.highlightLastMove();
+    }
+
+    publishBoardState(boardState) {
+        window.__currentBoardState = JSON.parse(JSON.stringify(boardState || {}));
+    }
+
+    getPieceCode(piece) {
+        if (piece && piece.code && this.pieceImages[piece.code]) {
+            return piece.code;
+        }
+
+        const pieceTypeMap = {
+            pawn: 'p',
+            rook: 'r',
+            knight: 'n',
+            bishop: 'b',
+            queen: 'q',
+            king: 'k'
+        };
+        const normalizedType = String(piece?.type || '').toLowerCase();
+        const baseCode = pieceTypeMap[normalizedType] || normalizedType;
+
+        if (!baseCode) {
+            return '';
+        }
+
+        return piece?.color === 'white' ? baseCode.toUpperCase() : baseCode;
     }
 
     /**

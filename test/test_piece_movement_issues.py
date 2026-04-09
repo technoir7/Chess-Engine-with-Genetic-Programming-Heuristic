@@ -29,13 +29,15 @@ class TestPieceMovementIssues(unittest.TestCase):
         self.app_context.pop()
     
     def test_move_flow_debug(self):
-        """Debug test that examines the entire move flow step by step."""
-        # 1. Get the initial board state
+        """Debug test that examines the entire move flow step by step.
+
+        board_to_dict returns single-letter type codes ('p' not 'pawn').
+        """
         print("Initial board state:")
         initial_board = self.init_data.get('board', {})
         self.assertIn('e2', initial_board, "Initial board should have a piece at e2")
         piece_at_e2 = initial_board.get('e2', {})
-        self.assertEqual(piece_at_e2.get('type'), 'pawn', "Piece at e2 should be a pawn")
+        self.assertEqual(piece_at_e2.get('type'), 'p', "Piece at e2 should be a pawn (type='p')")
         self.assertEqual(piece_at_e2.get('color'), 'white', "Piece at e2 should be white")
         
         # 2. Print internal board representation

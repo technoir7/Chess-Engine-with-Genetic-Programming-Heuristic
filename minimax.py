@@ -7,6 +7,11 @@ from itertools import count
 from collections import OrderedDict, namedtuple
 
 
+class SearchTimeout(Exception):
+    """Raised when the minimax search exceeds its allotted time budget."""
+    pass
+
+
 
 ###############################################################################
 # Search logic
@@ -151,19 +156,36 @@ class Minimax:
         # print(self.heuristic.evaluate(state))
         return self.heuristic.evaluate(state)
 
-    def solution(self, state):
-        actions = []
+    def solution(self, state, deadline=None):
+        actions = list(state.gen_moves())
+        if not actions:
+            return None, self.evaluate(state, 0)
+
         depth = 3
         alpha = -999999999
         beta = 999999999
-        score = self.value(0, state, depth , alpha, beta)
-        for move in state.gen_moves():
-            actions.append(move)
+        best_move = actions[0]
+        best_score = -999999999
 
-        solutions = {action : self.value(0, state.move(action), depth, alpha, beta) for action in actions}
-        return max(solutions, key = solutions.get), score
+        for action in actions:
+            try:
+                score = self.value(0, state.move(action), depth, alpha, beta, deadline)
+            except SearchTimeout:
+                # Return the best fully-evaluated move we have so far.
+                return best_move, best_score
 
-    def value(self, index, state, depth, alpha, beta):
+            if score > best_score:
+                best_score = score
+                best_move = action
+
+            alpha = max(alpha, best_score)
+
+        return best_move, best_score
+
+    def value(self, index, state, depth, alpha, beta, deadline=None):
+        if deadline is not None and time.monotonic() >= deadline:
+            raise SearchTimeout()
+
         index += 1
         getNumAgents = 2
         if index >= getNumAgents:
@@ -174,42 +196,40 @@ class Minimax:
         if depth <= 0:
             return self.evaluate(state, index)
         elif index == 0:
-            return self.max_value(index, state, depth, alpha, beta)
+            return self.max_value(index, state, depth, alpha, beta, deadline)
         else:
-            return self.min_value(index, state, depth, alpha, beta)
+            return self.min_value(index, state, depth, alpha, beta, deadline)
 
 
-    def max_value(self, index, game_state, depth, alpha, beta):
+    def max_value(self, index, game_state, depth, alpha, beta, deadline=None):
+        if deadline is not None and time.monotonic() >= deadline:
+            raise SearchTimeout()
+
         score = -999999999
         actions = []
         for move in game_state.gen_moves():
             actions.append(move)
-        successors = [game_state.move(action) for action in actions]
-        # for state in successors:
-        #     score = max(score, self.value(index, state, depth))
 
         for action in actions:
             state = game_state.move(action)
-            score = max(score, self.value(index+1, state, depth, alpha, beta))
-            beta = min(beta, score)
-            if score > beta:
+            score = max(score, self.value(index+1, state, depth, alpha, beta, deadline))
+            if score >= beta:
                 return score
             alpha = max(alpha, score)
         return score
 
-    def min_value(self, index, game_state, depth, alpha, beta):
+    def min_value(self, index, game_state, depth, alpha, beta, deadline=None):
+        if deadline is not None and time.monotonic() >= deadline:
+            raise SearchTimeout()
+
         score = 999999999
         actions = []
         for move in game_state.gen_moves():
             actions.append(move)
-        successors = [game_state.move(action) for action in actions]
-        # for state in successors:
-        #     score = min(score, self.value(index, state, depth))
         for action in actions:
                 state = game_state.move(action)
-                score = min(score, self.value(index+1, state, depth, alpha, beta))
-                alpha = max(alpha, score)
-                if score < alpha:
+                score = min(score, self.value(index+1, state, depth, alpha, beta, deadline))
+                if score <= alpha:
                     return score
                 beta = min(beta, score)
         return score
@@ -228,8 +248,9 @@ class Minimax:
             - score is the evaluation score of the move
         """
         try:
+            deadline = time.monotonic() + max(secs, 0)
             # Call solution to get the move and score
-            result = self.solution(pos)
+            result = self.solution(pos, deadline=deadline)
             
             # Verify result is in the expected format (move, score)
             if isinstance(result, tuple) and len(result) == 2:

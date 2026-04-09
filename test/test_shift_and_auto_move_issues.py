@@ -1,4 +1,5 @@
 import unittest
+import app as app_module
 from app import app
 from chess_logic_by_thomasahle import Position, initial
 import json
@@ -88,20 +89,21 @@ class ShiftAndAutoMoveIssuesTestCase(unittest.TestCase):
         self.assertEqual(third_board_after['c4']['type'], 'b')
         self.assertEqual(third_board_after['c4']['color'], 'white')
         
-        # Check there's no "black" text on the board
-        # This is done by ensuring there are no unexpected properties in pieces
-        allowed_properties = ['type', 'color']
-        
+        # Check there's no unexpected text on the board.
+        # board_to_dict may include 'type', 'color', and optionally 'code'.
+        # The 'code' field is an uppercase/lowercase single-letter piece identifier
+        # and is a legitimate part of the current API response.
+        allowed_properties = {'type', 'color', 'code'}
+
         for square, piece in third_board_after.items():
-            # Check each piece has only the expected properties
             for prop in piece:
-                self.assertIn(prop, allowed_properties, 
+                self.assertIn(prop, allowed_properties,
                               f"Unexpected property '{prop}' found in piece at {square}")
-            
-            # Check no literals of "black" appearing incorrectly
+
+            # For non-black pieces, the word 'black' must not appear in any value.
             if piece['color'] != 'black':
                 for value in piece.values():
-                    self.assertNotIn('black', str(value).lower(), 
+                    self.assertNotIn('black', str(value).lower(),
                                      f"'black' text found in piece at {square}")
     
     def test_engine_not_making_player_moves(self):
@@ -140,10 +142,10 @@ class ShiftAndAutoMoveIssuesTestCase(unittest.TestCase):
                          "After AI's second move, it should be player's turn again")
         
         # THIS IS WHERE THE TEST WILL SIMULATE THE BUG:
-        # Now we want to test what happens when the backend thinks it's the AI's turn
-        # We'll manually set the current_player to 'black' to simulate this scenario
+        # Directly set current_player to 'black' to simulate it being the AI's turn.
+        app_module.current_player = 'black'
         invalid_turn_response = self.client.post('/move',
-                                   data='{"from": "b1", "to": "c3", "_forceBlackTurn": true}',
+                                   data='{"from": "b1", "to": "c3"}',
                                    content_type='application/json')
         invalid_turn_data = invalid_turn_response.get_json()
         
